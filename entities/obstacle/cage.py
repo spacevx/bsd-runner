@@ -18,13 +18,13 @@ class FallingCage(BaseObstacle):
     _cageCache: Surface | None = None
     _chainCache: Surface | None = None
 
-    WIDTH: int = 160
-    HEIGHT: int = 140
-    CHAIN_WIDTH: int = 8
-    FALL_SPEED: float = 1200.0
-    WARNING_DURATION: float = 0.6
-    TRIGGER_DISTANCE: float = 600.0
-    GROUNDED_DURATION: float = 0.8
+    cageWidth: int = 160
+    cageHeight: int = 140
+    chainWidth: int = 8
+    fallSpeed: float = 1200.0
+    warningDuration: float = 0.6
+    triggerDistance: float = 600.0
+    groundedDuration: float = 0.8
 
     def __init__(self, x: int, ceilingY: int, groundY: int, scrollSpeed: float = 400.0) -> None:
         super().__init__()
@@ -40,7 +40,7 @@ class FallingCage(BaseObstacle):
         self.fallVelocity: float = 0.0
 
         self.image = self._getCageImage()
-        self.chainImage = self._getChainImage(groundY - ceilingY - self.HEIGHT)
+        self.chainImage = self._getChainImage(groundY - ceilingY - self.cageHeight)
         self.rect = self.image.get_rect(midtop=(x, ceilingY))
         self.chainRect = self.chainImage.get_rect(midbottom=(x, self.rect.top))
 
@@ -61,7 +61,7 @@ class FallingCage(BaseObstacle):
 
     @classmethod
     def _createCageSurface(cls) -> Surface:
-        w, h = cls.WIDTH, cls.HEIGHT
+        w, h = cls.cageWidth, cls.cageHeight
         surface = pygame.Surface((w, h), pygame.SRCALPHA)
 
         metal: Color = (120, 120, 130)
@@ -93,13 +93,13 @@ class FallingCage(BaseObstacle):
 
     @classmethod
     def _createChainSurface(cls, height: int) -> Surface:
-        w = cls.CHAIN_WIDTH * 3
+        w = cls.chainWidth * 3
         surface = pygame.Surface((w, max(1, height)), pygame.SRCALPHA)
 
         chainColor: Color = (100, 100, 110)
         highlight: Color = (140, 140, 150)
         linkH = 12
-        linkW = cls.CHAIN_WIDTH
+        linkW = cls.chainWidth
 
         cx = w // 2
         for y in range(0, height, linkH):
@@ -112,7 +112,7 @@ class FallingCage(BaseObstacle):
     def triggerFall(self) -> None:
         if self.state == CageState.HANGING:
             self.state = CageState.WARNING
-            self.warningTimer = self.WARNING_DURATION
+            self.warningTimer = self.warningDuration
 
     def get_hitbox(self) -> Rect:
         return self.rect.inflate(-30, -20)
@@ -124,7 +124,7 @@ class FallingCage(BaseObstacle):
         if self.state == CageState.HANGING:
             if playerX is not None:
                 dist = self.rect.centerx - playerX
-                if 0 < dist < self.TRIGGER_DISTANCE:
+                if 0 < dist < self.triggerDistance:
                     self.triggerFall()
 
         elif self.state == CageState.WARNING:
@@ -136,13 +136,13 @@ class FallingCage(BaseObstacle):
 
         elif self.state == CageState.FALLING:
             self.fallVelocity += 2000.0 * dt
-            self.fallVelocity = min(self.fallVelocity, self.FALL_SPEED)
+            self.fallVelocity = min(self.fallVelocity, self.fallSpeed)
             self.rect.y += int(self.fallVelocity * dt)
 
             if self.rect.bottom >= self.groundY:
                 self.rect.bottom = self.groundY
                 self.state = CageState.GROUNDED
-                self.groundedTimer = self.GROUNDED_DURATION
+                self.groundedTimer = self.groundedDuration
 
         elif self.state == CageState.GROUNDED:
             self.groundedTimer -= dt
@@ -170,7 +170,7 @@ class FallingCage(BaseObstacle):
         surface.blit(self.image, (drawX, self.rect.y))
 
         if self.state == CageState.WARNING:
-            warnSurf = pygame.Surface((self.WIDTH + 20, self.groundY - self.rect.bottom), pygame.SRCALPHA)
+            warnSurf = pygame.Surface((self.cageWidth + 20, self.groundY - self.rect.bottom), pygame.SRCALPHA)
             alpha = max(0, min(255, int(80 + 40 * abs(self.shakeOffset))))
             warnColor = (255, 50, 50, alpha)
             pygame.draw.rect(warnSurf, warnColor, warnSurf.get_rect())

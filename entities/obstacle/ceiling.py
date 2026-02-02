@@ -5,11 +5,11 @@ from settings import Color
 
 
 class Ceiling:
-    HEIGHT: int = 60
+    defaultHeight: int = 60
 
     def __init__(self, screenWidth: int, screenHeight: int) -> None:
         self.width = screenWidth
-        self.height = self.HEIGHT
+        self.height = self.defaultHeight
         self.image = self._createSurface(screenWidth)
         self.rect = self.image.get_rect(topleft=(0, 0))
 

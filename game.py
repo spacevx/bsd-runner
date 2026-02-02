@@ -5,137 +5,137 @@ from pygame.time import Clock
 from pygame.font import Font
 
 from settings import (
-    WIDTH, HEIGHT, MIN_WIDTH, MIN_HEIGHT, FPS, TITLE,
-    DARK_GRAY, WHITE, GameState, DISPLAY_FLAGS, ScreenSize
+    width, height, minWidth, minHeight, fps, title,
+    darkGray, white, GameState, displayFlags, ScreenSize
 )
 from screens import MainMenu, GameScreen
-from strings import OPTIONS_TITLE, OPTIONS_SUBTITLE, INSTRUCTION_ESC
+from strings import optionsTitle, optionsSubtitle, instructionEsc
 
 
 class Game:
     def __init__(self) -> None:
         pygame.init()
-        self.screen: Surface = pygame.display.set_mode((WIDTH, HEIGHT), DISPLAY_FLAGS)
-        pygame.display.set_caption(TITLE)
+        self.screen: Surface = pygame.display.set_mode((width, height), displayFlags)
+        pygame.display.set_caption(title)
         self.clock: Clock = pygame.time.Clock()
 
-        self.screen_size: ScreenSize = (WIDTH, HEIGHT)
-        self.fullscreen: bool = False
-        self.windowed_size: ScreenSize = (WIDTH, HEIGHT)
-        self.running: bool = True
+        self.screenSize: ScreenSize = (width, height)
+        self.bFullscreen: bool = False
+        self.windowedSize: ScreenSize = (width, height)
+        self.bRunning: bool = True
         self.state: GameState = GameState.MENU
 
-        self.menu: MainMenu = MainMenu(self.set_state)
-        self.game_screen: GameScreen = GameScreen(self.set_state)
+        self.menu: MainMenu = MainMenu(self.setState)
+        self.gameScreen: GameScreen = GameScreen(self.setState)
 
         self.font: Font = pygame.font.Font(None, 48)
-        self.small_font: Font = pygame.font.Font(None, 32)
+        self.smallFont: Font = pygame.font.Font(None, 32)
 
-    def set_state(self, new_state: GameState) -> None:
-        if new_state == GameState.GAME and self.state != GameState.GAME:
-            self.game_screen.reset()
-        self.state = new_state
+    def setState(self, newState: GameState) -> None:
+        if newState == GameState.GAME and self.state != GameState.GAME:
+            self.gameScreen.reset()
+        self.state = newState
         if self.state == GameState.QUIT:
-            self.running = False
+            self.bRunning = False
 
-    def _toggle_fullscreen(self) -> None:
+    def _toggleFullscreen(self) -> None:
         result: int = pygame.display.toggle_fullscreen()
 
         if result:
-            self.fullscreen = not self.fullscreen
+            self.bFullscreen = not self.bFullscreen
             info = pygame.display.Info()
-            if self.fullscreen:
-                self.windowed_size = self.screen_size
-                self.screen_size = (info.current_w, info.current_h)
+            if self.bFullscreen:
+                self.windowedSize = self.screenSize
+                self.screenSize = (info.current_w, info.current_h)
             else:
-                self.screen_size = self.windowed_size
+                self.screenSize = self.windowedSize
         else:
-            self.fullscreen = not self.fullscreen
-            if self.fullscreen:
-                self.windowed_size = self.screen_size
+            self.bFullscreen = not self.bFullscreen
+            if self.bFullscreen:
+                self.windowedSize = self.screenSize
                 self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
                 info = pygame.display.Info()
-                self.screen_size = (info.current_w, info.current_h)
+                self.screenSize = (info.current_w, info.current_h)
             else:
-                self.screen_size = self.windowed_size
-                self.screen = pygame.display.set_mode(self.screen_size, DISPLAY_FLAGS)
+                self.screenSize = self.windowedSize
+                self.screen = pygame.display.set_mode(self.screenSize, displayFlags)
 
-        self.menu.on_resize(self.screen_size)
-        self.game_screen.on_resize(self.screen_size)
+        self.menu.onResize(self.screenSize)
+        self.gameScreen.onResize(self.screenSize)
 
-    def _handle_resize(self, event: Event) -> None:
-        w: int = max(event.w, MIN_WIDTH)
-        h: int = max(event.h, MIN_HEIGHT)
-        self.screen_size = (w, h)
-        self.screen = pygame.display.set_mode(self.screen_size, DISPLAY_FLAGS)
-        self.menu.on_resize(self.screen_size)
-        self.game_screen.on_resize(self.screen_size)
+    def _handleResize(self, event: Event) -> None:
+        w: int = max(event.w, minWidth)
+        h: int = max(event.h, minHeight)
+        self.screenSize = (w, h)
+        self.screen = pygame.display.set_mode(self.screenSize, displayFlags)
+        self.menu.onResize(self.screenSize)
+        self.gameScreen.onResize(self.screenSize)
 
-    def handle_events(self) -> None:
+    def handleEvents(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.running = False
+                self.bRunning = False
 
             elif event.type == pygame.VIDEORESIZE:
-                self._handle_resize(event)
+                self._handleResize(event)
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_F11:
-                    self._toggle_fullscreen()
-                elif event.key == pygame.K_ESCAPE and self.fullscreen:
-                    self._toggle_fullscreen()
+                    self._toggleFullscreen()
+                elif event.key == pygame.K_ESCAPE and self.bFullscreen:
+                    self._toggleFullscreen()
 
             if self.state == GameState.MENU:
-                self.menu.handle_event(event)
+                self.menu.handleEvent(event)
 
             elif self.state == GameState.GAME:
-                self.game_screen.handle_event(event)
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and not self.fullscreen:
-                    self.set_state(GameState.MENU)
+                self.gameScreen.handleEvent(event)
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and not self.bFullscreen:
+                    self.setState(GameState.MENU)
 
             elif self.state == GameState.OPTIONS:
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and not self.fullscreen:
-                    self.set_state(GameState.MENU)
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and not self.bFullscreen:
+                    self.setState(GameState.MENU)
 
     def update(self, dt: float) -> None:
         if self.state == GameState.MENU:
             self.menu.update(dt)
         elif self.state == GameState.GAME:
-            self.game_screen.update(dt)
+            self.gameScreen.update(dt)
 
     def draw(self) -> None:
         if self.state == GameState.MENU:
             self.menu.draw(self.screen)
 
         elif self.state == GameState.GAME:
-            self.game_screen.draw(self.screen)
+            self.gameScreen.draw(self.screen)
 
         elif self.state == GameState.OPTIONS:
-            self._draw_placeholder(OPTIONS_TITLE, OPTIONS_SUBTITLE)
+            self._drawPlaceholder(optionsTitle, optionsSubtitle)
 
         pygame.display.flip()
 
-    def _draw_placeholder(self, title: str, subtitle: str) -> None:
-        w, h = self.screen_size
+    def _drawPlaceholder(self, titleText: str, subtitle: str) -> None:
+        w, h = self.screenSize
 
-        self.screen.fill(DARK_GRAY)
+        self.screen.fill(darkGray)
 
-        title_surf: Surface = self.font.render(title, True, WHITE)
-        title_rect = title_surf.get_rect(center=(w // 2, h // 2 - 30))
-        self.screen.blit(title_surf, title_rect)
+        titleSurf: Surface = self.font.render(titleText, True, white)
+        titleRect = titleSurf.get_rect(center=(w // 2, h // 2 - 30))
+        self.screen.blit(titleSurf, titleRect)
 
-        sub_surf: Surface = self.small_font.render(subtitle, True, WHITE)
-        sub_rect = sub_surf.get_rect(center=(w // 2, h // 2 + 20))
-        self.screen.blit(sub_surf, sub_rect)
+        subSurf: Surface = self.smallFont.render(subtitle, True, white)
+        subRect = subSurf.get_rect(center=(w // 2, h // 2 + 20))
+        self.screen.blit(subSurf, subRect)
 
-        esc_surf: Surface = self.small_font.render(INSTRUCTION_ESC, True, (150, 150, 150))
-        esc_rect = esc_surf.get_rect(center=(w // 2, h - 50))
-        self.screen.blit(esc_surf, esc_rect)
+        escSurf: Surface = self.smallFont.render(instructionEsc, True, (150, 150, 150))
+        escRect = escSurf.get_rect(center=(w // 2, h - 50))
+        self.screen.blit(escSurf, escRect)
 
     def run(self) -> None:
-        while self.running:
-            dt: float = self.clock.tick(FPS) / 1000.0
-            self.handle_events()
+        while self.bRunning:
+            dt: float = self.clock.tick(fps) / 1000.0
+            self.handleEvents()
             self.update(dt)
             self.draw()
 

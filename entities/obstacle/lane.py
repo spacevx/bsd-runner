@@ -13,10 +13,10 @@ class Obstacle(BaseObstacle):
     _lowCache: Surface | None = None
     _highCache: Surface | None = None
 
-    LOW_WIDTH: int = 120
-    LOW_HEIGHT: int = 100
-    HIGH_WIDTH: int = 140
-    HIGH_HEIGHT: int = 110
+    lowWidth: int = 120
+    lowHeight: int = 100
+    highWidth: int = 140
+    highHeight: int = 110
 
     def __init__(self, x: int, groundY: int, obstacleType: ObstacleType) -> None:
         super().__init__()
@@ -68,13 +68,13 @@ class Obstacle(BaseObstacle):
     @classmethod
     def _getLowImage(cls) -> Surface:
         if cls._lowCache is None:
-            cls._lowCache = cls._createSurface(cls.LOW_WIDTH, cls.LOW_HEIGHT, bFlip=False)
+            cls._lowCache = cls._createSurface(cls.lowWidth, cls.lowHeight, bFlip=False)
         return cls._lowCache
 
     @classmethod
     def _getHighImage(cls) -> Surface:
         if cls._highCache is None:
-            cls._highCache = cls._createSurface(cls.HIGH_WIDTH, cls.HIGH_HEIGHT, bFlip=True)
+            cls._highCache = cls._createSurface(cls.highWidth, cls.highHeight, bFlip=True)
         return cls._highCache
 
     @classmethod

@@ -17,13 +17,13 @@ class PlayerState(Enum):
 
 
 class Player(AnimatedSprite):
-    GRAVITY: float = 1500.0
-    JUMP_FORCE: float = -600.0
-    SLIDE_DURATION: float = 0.5
-    PLAYER_SCALE: float = 0.15
+    gravity: float = 1500.0
+    jumpForce: float = -600.0
+    slideDuration: float = 0.5
+    playerScale: float = 0.15
 
     def __init__(self, x: int, groundY: int) -> None:
-        frames = load_frames(framesPath, scale=self.PLAYER_SCALE, fallback=self._create_fallback())
+        frames = load_frames(framesPath, scale=self.playerScale, fallback=self._createFallback())
         super().__init__(x, groundY, frames)
 
         self.groundY: int = groundY
@@ -33,7 +33,7 @@ class Player(AnimatedSprite):
         self.bOnGround: bool = True
 
     @staticmethod
-    def _create_fallback() -> Surface:
+    def _createFallback() -> Surface:
         w, h = 40, 60
         surf = pygame.Surface((w, h), pygame.SRCALPHA)
 
@@ -51,15 +51,15 @@ class Player(AnimatedSprite):
 
         return surf
 
-    def _get_slide_image(self) -> Surface:
+    def _getSlideImage(self) -> Surface:
         return pygame.transform.rotate(self._get_frame(), 90)
 
-    def set_ground_y(self, groundY: int) -> None:
+    def setGroundY(self, groundY: int) -> None:
         self.groundY = groundY
         if self.bOnGround:
             self.rect.bottom = groundY
 
-    def handle_input(self, event: pygame.event.Event) -> None:
+    def handleInput(self, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_SPACE, pygame.K_UP, pygame.K_z, pygame.K_w):
                 self._jump()
@@ -68,7 +68,7 @@ class Player(AnimatedSprite):
 
     def _jump(self) -> None:
         if self.bOnGround and self.state != PlayerState.SLIDING:
-            self.velocity.y = self.JUMP_FORCE
+            self.velocity.y = self.jumpForce
             self.state = PlayerState.JUMPING
             self.bOnGround = False
             self.image = self._get_frame()
@@ -77,33 +77,33 @@ class Player(AnimatedSprite):
     def _slide(self) -> None:
         if self.bOnGround and self.state == PlayerState.RUNNING:
             self.state = PlayerState.SLIDING
-            self.slideTimer = self.SLIDE_DURATION
-            self.image = self._get_slide_image()
+            self.slideTimer = self.slideDuration
+            self.image = self._getSlideImage()
             self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
 
-    def _end_slide(self) -> None:
+    def _endSlide(self) -> None:
         if self.state == PlayerState.SLIDING:
             self.state = PlayerState.RUNNING
             self.image = self._get_frame()
             self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
 
-    def get_hitbox(self) -> Rect:
+    def getHitbox(self) -> Rect:
         if self.state == PlayerState.SLIDING:
             return self.rect.inflate(-10, -5)
         return self.rect.inflate(-10, -10)
 
-    def _update_image(self) -> None:
+    def _updateImage(self) -> None:
         if self.state == PlayerState.SLIDING:
-            self.image = self._get_slide_image()
+            self.image = self._getSlideImage()
         else:
             self.image = self._get_frame()
 
     def update(self, dt: float) -> None:
         if self.update_animation(dt):
-            self._update_image()
+            self._updateImage()
 
         if self.state == PlayerState.JUMPING:
-            self.velocity.y += self.GRAVITY * dt
+            self.velocity.y += self.gravity * dt
             self.rect.y += int(self.velocity.y * dt)
 
             if self.rect.bottom >= self.groundY:
@@ -115,4 +115,4 @@ class Player(AnimatedSprite):
         elif self.state == PlayerState.SLIDING:
             self.slideTimer -= dt
             if self.slideTimer <= 0:
-                self._end_slide()
+                self._endSlide()
