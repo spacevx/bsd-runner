@@ -5,8 +5,8 @@ import pygame
 
 from strings import WINDOW_TITLE
 
-WIDTH: Final[int] = 800
-HEIGHT: Final[int] = 600
+WIDTH: Final[int] = 1920
+HEIGHT: Final[int] = 1080
 MIN_WIDTH: Final[int] = 640
 MIN_HEIGHT: Final[int] = 480
 FPS: Final[int] = 60
@@ -32,3 +32,6 @@ class GameState(Enum):
     GAME = auto()
     OPTIONS = auto()
     QUIT = auto()
+
+
+OBSTACLE_SPAWN_EVENT: Final[int] = pygame.USEREVENT + 1

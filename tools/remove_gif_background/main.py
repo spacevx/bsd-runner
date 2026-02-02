@@ -26,18 +26,21 @@ def flood_fill(frame: Image.Image, th: int) -> Image.Image:
 
     q: deque[tuple[int, int]] = deque()
     for p in starts:
-        if p not in visited and is_black(*px[p][:3], th):
+        r, g, b = px[p][0], px[p][1], px[p][2]
+        if p not in visited and is_black(r, g, b, th):
             q.append(p)
             visited.add(p)
 
     while q:
         x, y = q.popleft()
-        if is_black(*px[x, y][:3], th):
+        r, g, b = px[x, y][0], px[x, y][1], px[x, y][2]
+        if is_black(r, g, b, th):
             transparent.add((x, y))
             for dx, dy in DIRS8:
                 nx, ny = x + dx, y + dy
                 if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in visited:
-                    if is_black(*px[nx, ny][:3], ALPHA_TH):
+                    nr, ng, nb = px[nx, ny][0], px[nx, ny][1], px[nx, ny][2]
+                    if is_black(nr, ng, nb, ALPHA_TH):
                         visited.add((nx, ny))
                         q.append((nx, ny))
 

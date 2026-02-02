@@ -39,22 +39,34 @@ class Game:
             self.running = False
 
     def _toggle_fullscreen(self) -> None:
-        self.fullscreen = not self.fullscreen
-        if self.fullscreen:
-            self.windowed_size = self.screen_size
-            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        result: int = pygame.display.toggle_fullscreen()
+
+        if result:
+            self.fullscreen = not self.fullscreen
             info = pygame.display.Info()
-            self.screen_size = (info.current_w, info.current_h)
+            if self.fullscreen:
+                self.windowed_size = self.screen_size
+                self.screen_size = (info.current_w, info.current_h)
+            else:
+                self.screen_size = self.windowed_size
         else:
-            self.screen_size = self.windowed_size
-            self.screen = pygame.display.set_mode(self.screen_size, DISPLAY_FLAGS)
+            self.fullscreen = not self.fullscreen
+            if self.fullscreen:
+                self.windowed_size = self.screen_size
+                self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                info = pygame.display.Info()
+                self.screen_size = (info.current_w, info.current_h)
+            else:
+                self.screen_size = self.windowed_size
+                self.screen = pygame.display.set_mode(self.screen_size, DISPLAY_FLAGS)
+
         self.menu.on_resize(self.screen_size)
         self.game_screen.on_resize(self.screen_size)
 
     def _handle_resize(self, event: Event) -> None:
-        new_width: int = max(event.w, MIN_WIDTH)
-        new_height: int = max(event.h, MIN_HEIGHT)
-        self.screen_size = (new_width, new_height)
+        w: int = max(event.w, MIN_WIDTH)
+        h: int = max(event.h, MIN_HEIGHT)
+        self.screen_size = (w, h)
         self.screen = pygame.display.set_mode(self.screen_size, DISPLAY_FLAGS)
         self.menu.on_resize(self.screen_size)
         self.game_screen.on_resize(self.screen_size)
@@ -104,22 +116,21 @@ class Game:
         pygame.display.flip()
 
     def _draw_placeholder(self, title: str, subtitle: str) -> None:
-        width: int = self.screen_size[0]
-        height: int = self.screen_size[1]
+        w, h = self.screen_size
 
         self.screen.fill(DARK_GRAY)
 
-        title_surface: Surface = self.font.render(title, True, WHITE)
-        title_rect = title_surface.get_rect(center=(width // 2, height // 2 - 30))
-        self.screen.blit(title_surface, title_rect)
+        title_surf: Surface = self.font.render(title, True, WHITE)
+        title_rect = title_surf.get_rect(center=(w // 2, h // 2 - 30))
+        self.screen.blit(title_surf, title_rect)
 
-        subtitle_surface: Surface = self.small_font.render(subtitle, True, WHITE)
-        subtitle_rect = subtitle_surface.get_rect(center=(width // 2, height // 2 + 20))
-        self.screen.blit(subtitle_surface, subtitle_rect)
+        sub_surf: Surface = self.small_font.render(subtitle, True, WHITE)
+        sub_rect = sub_surf.get_rect(center=(w // 2, h // 2 + 20))
+        self.screen.blit(sub_surf, sub_rect)
 
-        esc_surface: Surface = self.small_font.render(INSTRUCTION_ESC, True, (150, 150, 150))
-        esc_rect = esc_surface.get_rect(center=(width // 2, height - 50))
-        self.screen.blit(esc_surface, esc_rect)
+        esc_surf: Surface = self.small_font.render(INSTRUCTION_ESC, True, (150, 150, 150))
+        esc_rect = esc_surf.get_rect(center=(w // 2, h - 50))
+        self.screen.blit(esc_surf, esc_rect)
 
     def run(self) -> None:
         while self.running:

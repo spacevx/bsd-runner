@@ -2,7 +2,6 @@ from typing import Final
 
 WINDOW_TITLE: Final[str] = "MMA"
 MENU_TITLE: Final[str] = "MMA"
-MENU_SUBTITLE: Final[str] = "COMBATTANT ULTIME"
 BTN_START: Final[str] = "COMMENCER LE JEU"
 BTN_OPTIONS: Final[str] = "OPTIONS"
 BTN_QUIT: Final[str] = "QUITTER"
