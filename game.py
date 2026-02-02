@@ -1,4 +1,9 @@
 import pygame
+from pygame import Surface
+from pygame.event import Event
+from pygame.time import Clock
+from pygame.font import Font
+
 from settings import WIDTH, HEIGHT, FPS, TITLE, DARK_GRAY, WHITE, GameState
 from screens import MainMenu
 from strings import (
@@ -9,26 +14,26 @@ from strings import (
 
 
 class Game:
-    def __init__(self):
+    def __init__(self) -> None:
         pygame.init()
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        self.screen: Surface = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption(TITLE)
-        self.clock = pygame.time.Clock()
+        self.clock: Clock = pygame.time.Clock()
 
-        self.running = True
-        self.state = GameState.MENU
+        self.running: bool = True
+        self.state: GameState = GameState.MENU
 
-        self.menu = MainMenu(self.set_state)
+        self.menu: MainMenu = MainMenu(self.set_state)
 
-        self.font = pygame.font.Font(None, 48)
-        self.small_font = pygame.font.Font(None, 32)
+        self.font: Font = pygame.font.Font(None, 48)
+        self.small_font: Font = pygame.font.Font(None, 32)
 
-    def set_state(self, new_state):
+    def set_state(self, new_state: GameState) -> None:
         self.state = new_state
         if self.state == GameState.QUIT:
             self.running = False
 
-    def handle_events(self):
+    def handle_events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -40,11 +45,11 @@ class Game:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     self.set_state(GameState.MENU)
 
-    def update(self):
+    def update(self) -> None:
         if self.state == GameState.MENU:
             self.menu.update()
 
-    def draw(self):
+    def draw(self) -> None:
         if self.state == GameState.MENU:
             self.menu.draw(self.screen)
 
@@ -56,22 +61,22 @@ class Game:
 
         pygame.display.flip()
 
-    def _draw_placeholder(self, title, subtitle):
+    def _draw_placeholder(self, title: str, subtitle: str) -> None:
         self.screen.fill(DARK_GRAY)
 
-        title_surface = self.font.render(title, True, WHITE)
+        title_surface: Surface = self.font.render(title, True, WHITE)
         title_rect = title_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 30))
         self.screen.blit(title_surface, title_rect)
 
-        subtitle_surface = self.small_font.render(subtitle, True, WHITE)
+        subtitle_surface: Surface = self.small_font.render(subtitle, True, WHITE)
         subtitle_rect = subtitle_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 20))
         self.screen.blit(subtitle_surface, subtitle_rect)
 
-        esc_surface = self.small_font.render(INSTRUCTION_ESC, True, (150, 150, 150))
+        esc_surface: Surface = self.small_font.render(INSTRUCTION_ESC, True, (150, 150, 150))
         esc_rect = esc_surface.get_rect(center=(WIDTH // 2, HEIGHT - 50))
         self.screen.blit(esc_surface, esc_rect)
 
-    def run(self):
+    def run(self) -> None:
         while self.running:
             self.clock.tick(FPS)
             self.handle_events()

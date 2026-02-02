@@ -1,34 +1,47 @@
+from typing import Callable
+
 import pygame
-from settings import RED, RED_BRIGHT, GOLD, WHITE
+from pygame import Surface, Rect
+from pygame.event import Event
+from pygame.font import Font
+
+from settings import RED, RED_BRIGHT, GOLD, WHITE, Color
 
 
 class Button(pygame.sprite.Sprite):
-
-    def __init__(self, x, y, width, height, text, callback=None):
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        text: str,
+        callback: Callable[[], None] | None = None
+    ) -> None:
         super().__init__()
-        self.width = width
-        self.height = height
-        self.text = text
-        self.callback = callback
-        self.hovered = False
+        self.width: int = width
+        self.height: int = height
+        self.text: str = text
+        self.callback: Callable[[], None] | None = callback
+        self.hovered: bool = False
 
-        self.color_normal = RED
-        self.color_hover = RED_BRIGHT
-        self.border_color = GOLD
-        self.text_color = WHITE
+        self.color_normal: Color = RED
+        self.color_hover: Color = RED_BRIGHT
+        self.border_color: Color = GOLD
+        self.text_color: Color = WHITE
 
-        self.image = pygame.Surface((width, height), pygame.SRCALPHA)
-        self.rect = self.image.get_rect(center=(x, y))
+        self.image: Surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        self.rect: Rect = self.image.get_rect(center=(x, y))
 
-        self.font = pygame.font.Font(None, 36)
+        self.font: Font = pygame.font.Font(None, 36)
 
         self._render()
 
-    def _render(self):
+    def _render(self) -> None:
         self.image.fill((0, 0, 0, 0))
 
-        color = self.color_hover if self.hovered else self.color_normal
-        border_width = 3 if self.hovered else 0
+        color: Color = self.color_hover if self.hovered else self.color_normal
+        border_width: int = 3 if self.hovered else 0
 
         pygame.draw.rect(
             self.image,
@@ -46,19 +59,19 @@ class Button(pygame.sprite.Sprite):
                 border_radius=8
             )
 
-        text_surface = self.font.render(self.text, True, self.text_color)
-        text_rect = text_surface.get_rect(center=(self.width // 2, self.height // 2))
+        text_surface: Surface = self.font.render(self.text, True, self.text_color)
+        text_rect: Rect = text_surface.get_rect(center=(self.width // 2, self.height // 2))
         self.image.blit(text_surface, text_rect)
 
-    def update(self):
-        mouse_pos = pygame.mouse.get_pos()
-        was_hovered = self.hovered
+    def update(self) -> None:
+        mouse_pos: tuple[int, int] = pygame.mouse.get_pos()
+        was_hovered: bool = self.hovered
         self.hovered = self.rect.collidepoint(mouse_pos)
 
         if was_hovered != self.hovered:
             self._render()
 
-    def handle_event(self, event):
+    def handle_event(self, event: Event) -> bool:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.hovered and self.callback:
                 self.callback()

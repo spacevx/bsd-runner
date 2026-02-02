@@ -1,19 +1,23 @@
 from enum import Enum, auto
-
-WIDTH = 800
-HEIGHT = 600
-FPS = 60
+from typing import Final
 
 from strings import WINDOW_TITLE
-TITLE = WINDOW_TITLE
 
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (200, 30, 30)
-RED_BRIGHT = (255, 50, 50)
-GOLD = (255, 215, 0)
-DARK_GRAY = (25, 25, 30)
-DARK_GRAY_LIGHT = (40, 40, 50)
+WIDTH: Final[int] = 800
+HEIGHT: Final[int] = 600
+FPS: Final[int] = 60
+
+TITLE: Final[str] = WINDOW_TITLE
+
+Color = tuple[int, int, int]
+
+BLACK: Final[Color] = (0, 0, 0)
+WHITE: Final[Color] = (255, 255, 255)
+RED: Final[Color] = (200, 30, 30)
+RED_BRIGHT: Final[Color] = (255, 50, 50)
+GOLD: Final[Color] = (255, 215, 0)
+DARK_GRAY: Final[Color] = (25, 25, 30)
+DARK_GRAY_LIGHT: Final[Color] = (40, 40, 50)
 
 
 class GameState(Enum):
