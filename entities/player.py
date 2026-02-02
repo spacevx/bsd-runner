@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from pathlib import Path
 
 import pygame
 from pygame import Surface, Rect
@@ -7,8 +6,9 @@ from pygame.math import Vector2
 
 from settings import Color
 from entities.animation import AnimatedSprite, load_frames
+from paths import assetsPath
 
-framesPath: Path = Path(f"{Path(__file__).parent.parent}/assets/player/frames")
+framesPath = assetsPath / "player" / "frames"
 
 class PlayerState(Enum):
     RUNNING = auto()
@@ -22,15 +22,15 @@ class Player(AnimatedSprite):
     SLIDE_DURATION: float = 0.5
     PLAYER_SCALE: float = 0.15
 
-    def __init__(self, x: int, ground_y: int) -> None:
+    def __init__(self, x: int, groundY: int) -> None:
         frames = load_frames(framesPath, scale=self.PLAYER_SCALE, fallback=self._create_fallback())
-        super().__init__(x, ground_y, frames)
+        super().__init__(x, groundY, frames)
 
-        self.ground_y: int = ground_y
+        self.groundY: int = groundY
         self.velocity: Vector2 = Vector2(0, 0)
         self.state: PlayerState = PlayerState.RUNNING
-        self.slide_timer: float = 0.0
-        self.on_ground: bool = True
+        self.slideTimer: float = 0.0
+        self.bOnGround: bool = True
 
     @staticmethod
     def _create_fallback() -> Surface:
@@ -54,10 +54,10 @@ class Player(AnimatedSprite):
     def _get_slide_image(self) -> Surface:
         return pygame.transform.rotate(self._get_frame(), 90)
 
-    def set_ground_y(self, ground_y: int) -> None:
-        self.ground_y = ground_y
-        if self.on_ground:
-            self.rect.bottom = ground_y
+    def set_ground_y(self, groundY: int) -> None:
+        self.groundY = groundY
+        if self.bOnGround:
+            self.rect.bottom = groundY
 
     def handle_input(self, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
@@ -67,17 +67,17 @@ class Player(AnimatedSprite):
                 self._slide()
 
     def _jump(self) -> None:
-        if self.on_ground and self.state != PlayerState.SLIDING:
+        if self.bOnGround and self.state != PlayerState.SLIDING:
             self.velocity.y = self.JUMP_FORCE
             self.state = PlayerState.JUMPING
-            self.on_ground = False
+            self.bOnGround = False
             self.image = self._get_frame()
             self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
 
     def _slide(self) -> None:
-        if self.on_ground and self.state == PlayerState.RUNNING:
+        if self.bOnGround and self.state == PlayerState.RUNNING:
             self.state = PlayerState.SLIDING
-            self.slide_timer = self.SLIDE_DURATION
+            self.slideTimer = self.SLIDE_DURATION
             self.image = self._get_slide_image()
             self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
 
@@ -106,13 +106,13 @@ class Player(AnimatedSprite):
             self.velocity.y += self.GRAVITY * dt
             self.rect.y += int(self.velocity.y * dt)
 
-            if self.rect.bottom >= self.ground_y:
-                self.rect.bottom = self.ground_y
+            if self.rect.bottom >= self.groundY:
+                self.rect.bottom = self.groundY
                 self.velocity.y = 0.0
-                self.on_ground = True
+                self.bOnGround = True
                 self.state = PlayerState.RUNNING
 
         elif self.state == PlayerState.SLIDING:
-            self.slide_timer -= dt
-            if self.slide_timer <= 0:
+            self.slideTimer -= dt
+            if self.slideTimer <= 0:
                 self._end_slide()

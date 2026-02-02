@@ -16,19 +16,19 @@ class AnimatedSprite(Sprite):
     def __init__(self, x: int, y: int, frames: list[AnimationFrame]) -> None:
         super().__init__()
         self.frames: list[AnimationFrame] = frames
-        self.frame_idx: int = 0
-        self.anim_timer: float = 0.0
+        self.frameIdx: int = 0
+        self.animTimer: float = 0.0
         self.image: Surface = self.frames[0].surface
         self.rect: pygame.Rect = self.image.get_rect(midbottom=(x, y))
 
     def _get_frame(self) -> Surface:
-        return self.frames[self.frame_idx].surface
+        return self.frames[self.frameIdx].surface
 
     def update_animation(self, dt: float) -> bool:
-        self.anim_timer += dt
-        if self.anim_timer >= self.frames[self.frame_idx].delay:
-            self.anim_timer = 0.0
-            self.frame_idx = (self.frame_idx + 1) % len(self.frames)
+        self.animTimer += dt
+        if self.animTimer >= self.frames[self.frameIdx].delay:
+            self.animTimer = 0.0
+            self.frameIdx = (self.frameIdx + 1) % len(self.frames)
             return True
         return False
 
