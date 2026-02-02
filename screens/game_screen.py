@@ -29,7 +29,7 @@ class GameScreen:
         self.screen_size: ScreenSize = (WIDTH, HEIGHT)
         self.scale: float = min(WIDTH / self.BASE_W, HEIGHT / self.BASE_H)
 
-        Obstacle.clear_cache()
+        Obstacle.clearCache()
         self._load_background()
 
         self.scrollX: float = 0.0
@@ -111,12 +111,12 @@ class GameScreen:
         self._create_fonts()
         groundH = new_size[1] - self.groundY
         self.groundTilemap.on_resize(new_size[0], self.groundY, groundH)
-        self.ceiling.on_resize(new_size[0])
+        self.ceiling.onResize(new_size[0])
         self.ceilingTilemap.on_resize(new_size[0], self.ceiling.HEIGHT)
 
     def reset(self) -> None:
-        Obstacle.clear_cache()
-        FallingCage.clear_cache()
+        Obstacle.clearCache()
+        FallingCage.clearCache()
         self.groundY = int(self.screen_size[1] * self.GROUND_RATIO)
 
         self.localPlayer = Player(self._s(320), self.groundY)
@@ -178,11 +178,11 @@ class GameScreen:
         if not playerHitbox.colliderect(obstacleHitbox):
             return False
 
-        if obstacle.obstacle_type == ObstacleType.LOW and player.state == PlayerState.JUMPING:
+        if obstacle.obstacleType == ObstacleType.LOW and player.state == PlayerState.JUMPING:
             if playerHitbox.bottom < obstacleHitbox.top + self._s(20):
                 return False
 
-        if obstacle.obstacle_type == ObstacleType.HIGH and player.state == PlayerState.SLIDING:
+        if obstacle.obstacleType == ObstacleType.HIGH and player.state == PlayerState.SLIDING:
             if playerHitbox.top > obstacleHitbox.bottom - self._s(15):
                 return False
 

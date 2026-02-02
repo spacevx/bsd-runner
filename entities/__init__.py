@@ -1,13 +1,13 @@
 from .animation import AnimationFrame, AnimatedSprite, load_frames
 from .player import Player, PlayerState
 from .chaser import Chaser
-from .obstacle import Obstacle, ObstacleType, FallingCage, CageState, Ceiling
+from .obstacle import Obstacle, ObstacleType, BaseObstacle, FallingCage, CageState, Ceiling
 from .tilemap import Tile, TileSet, GroundTilemap, DecorSprite, DecorLayer, CeilingTileSet, CeilingTilemap, TILE_SIZE
 
 __all__ = [
     'AnimationFrame', 'AnimatedSprite', 'load_frames',
     'Player', 'PlayerState',
     'Chaser',
-    'Obstacle', 'ObstacleType', 'FallingCage', 'CageState', 'Ceiling',
+    'Obstacle', 'ObstacleType', 'BaseObstacle', 'FallingCage', 'CageState', 'Ceiling',
     'Tile', 'TileSet', 'GroundTilemap', 'DecorSprite', 'DecorLayer', 'CeilingTileSet', 'CeilingTilemap', 'TILE_SIZE'
 ]
