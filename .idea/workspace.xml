@@ -5,11 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="130419f7-ccdd-4cf1-86b0-5db0274b427c" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tools/remove_gif_background/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/game.py" beforeDir="false" afterPath="$PROJECT_DIR$/game.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/screens/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/strings.py" beforeDir="false" afterPath="$PROJECT_DIR$/strings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/entities/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/entities/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/entities/chaser.py" beforeDir="false" afterPath="$PROJECT_DIR$/entities/chaser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/entities/obstacle.py" beforeDir="false" afterPath="$PROJECT_DIR$/entities/obstacle.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/entities/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/entities/player.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/screens/game_screen.py" beforeDir="false" afterPath="$PROJECT_DIR$/screens/game_screen.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -19,6 +21,13 @@
   <component name="EmbeddingIndexingInfo">
     <option name="cachedIndexableFilesCount" value="7" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -74,7 +83,7 @@
       <option name="presentableId" value="Default" />
       <updated>1769115942501</updated>
       <workItem from="1769115943845" duration="515000" />
-      <workItem from="1769117080524" duration="7339000" />
+      <workItem from="1769117080524" duration="12238000" />
     </task>
     <servers />
   </component>
