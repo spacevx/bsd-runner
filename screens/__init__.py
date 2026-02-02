@@ -1,4 +1,4 @@
 from .menu import MainMenu
-from .game_screen import GameScreen
+from .game import GameScreen
 
 __all__ = ['MainMenu', 'GameScreen']
