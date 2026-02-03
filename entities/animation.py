@@ -1,11 +1,11 @@
 import re
 from pathlib import Path
+from typing import Optional
 
 import pygame
 from pygame import Surface
 from pygame.sprite import Sprite
 
-# Code who were basically in entities/player, but in case we need to reuse it for animating other entites (maybe like the chaser?)
 
 class AnimationFrame:
     def __init__(self, surface: Surface, delay: float) -> None:
@@ -35,19 +35,25 @@ class AnimatedSprite(Sprite):
         return bAdvanced
 
 
-# Pattern is the regex for searching specific frame files (see assets/player/frames for example)
-def loadFrames(path: Path, pattern: str = r"frame_(\d+)_delay-([\d.]+)s\.gif", scale: float = 1.0) -> list[AnimationFrame]:
-    ## instead of checking the regex x times in the loop we're doing it once thanks to re.compile
+def loadFrames(
+    path: Path,
+    pattern: str = r"frame_(\d+)_delay-([\d.]+)s\.gif",
+    scale: float = 1.0,
+    targetHeight: Optional[int] = None
+) -> list[AnimationFrame]:
     regex = re.compile(pattern)
     frames: list[AnimationFrame] = []
 
-    # Don't ask me about this lol
     for file in sorted(path.glob("*.gif")):
         if match := regex.match(file.name):
             delay = float(match.group(2))
             try:
                 surf = pygame.image.load(str(file)).convert_alpha()
-                if scale != 1.0:
+                if targetHeight is not None:
+                    frameScale = targetHeight / surf.get_height()
+                    w, h = int(surf.get_width() * frameScale), targetHeight
+                    surf = pygame.transform.scale(surf, (w, h))
+                elif scale != 1.0:
                     w, h = int(surf.get_width() * scale), int(surf.get_height() * scale)
                     surf = pygame.transform.scale(surf, (w, h))
                 frames.append(AnimationFrame(surf, delay))

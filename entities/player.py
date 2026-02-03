@@ -1,18 +1,18 @@
 from enum import Enum, auto
 
 import pygame
-from pygame import Surface, Rect
+from pygame import Rect, Surface
 from pygame.math import Vector2
 
-from entities.animation import AnimatedSprite, loadFrames
+from entities.animation import AnimatedSprite, AnimationFrame, loadFrames
 from paths import assetsPath
 
-framesPath = assetsPath / "player" / "frames"
+runningFramesPath = assetsPath / "player" / "running" / "frames"
 
 class PlayerState(Enum):
     RUNNING = auto()
     JUMPING = auto()
-    SLIDING = auto() # TODO: Fix Sliding, actually when sliding it's colliding with the chaser so it's make the player loose (bc of _checkCollisions)
+    SLIDING = auto()
 
 class Player(AnimatedSprite):
     gravity: float = 1500.0
@@ -21,9 +21,10 @@ class Player(AnimatedSprite):
     playerScale: float = 0.15
 
     def __init__(self, x: int, groundY: int) -> None:
-        frames = loadFrames(framesPath, scale=self.playerScale)[116:132]
-        super().__init__(x, groundY, frames)
+        runningFrames = loadFrames(runningFramesPath, scale=self.playerScale)[116:132]
+        super().__init__(x, groundY, runningFrames)
 
+        self.runningFrames: list[AnimationFrame] = runningFrames
         self.groundY: int = groundY
         self.velocity: Vector2 = Vector2(0, 0)
         self.state: PlayerState = PlayerState.RUNNING
@@ -53,19 +54,26 @@ class Player(AnimatedSprite):
             self.image = self._getFrame()
             self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
 
-    # TODO: Add frame animations when sliding (so a real animation) and not just changing the rotation of the image
     def _slide(self) -> None:
         if self.bOnGround and self.state == PlayerState.RUNNING:
             self.state = PlayerState.SLIDING
             self.slideTimer = self.slideDuration
+            oldBottom = self.rect.bottom
+            oldCenterx = self.rect.centerx
             self.image = self._getSlideImage()
-            self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
+            self.rect = self.image.get_rect()
+            self.rect.bottom = oldBottom
+            self.rect.centerx = oldCenterx
 
     def _endSlide(self) -> None:
         if self.state == PlayerState.SLIDING:
             self.state = PlayerState.RUNNING
+            oldBottom = self.rect.bottom
+            oldCenterx = self.rect.centerx
             self.image = self._getFrame()
-            self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
+            self.rect = self.image.get_rect()
+            self.rect.bottom = oldBottom
+            self.rect.centerx = oldCenterx
 
     def getHitbox(self) -> Rect:
         if self.state == PlayerState.SLIDING:
@@ -78,13 +86,11 @@ class Player(AnimatedSprite):
         else:
             self.image = self._getFrame()
 
-    # called each frame in game/screens
     def update(self, dt: float) -> None:
         if self.updateAnimation(dt):
             self._updateImage()
 
         if self.state == PlayerState.JUMPING:
-            # TODO: Maybe Add animation when jumping? and not just changing the y vec lol
             self.velocity.y += self.gravity * dt
             self.rect.y += int(self.velocity.y * dt)
 
