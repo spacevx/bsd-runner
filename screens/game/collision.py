@@ -59,12 +59,12 @@ class CollisionSystem:
 
         return True
 
-    def check(self, player: Player, chaser: Chaser, obstacles: Group[Obstacle],
+    def check(self, player: Player, chaser: Chaser | None, obstacles: Group[Obstacle],
               cages: Group[FallingCage], bInvincible: bool) -> CollisionResult:
         result = CollisionResult()
 
         if bInvincible:
-            if chaser.hasCaughtPlayer(player.getHitbox()):
+            if chaser and chaser.hasCaughtPlayer(player.getHitbox()):
                 result.bCaught = True
             return result
 
@@ -84,7 +84,7 @@ class CollisionSystem:
             result.bHitCage = True
             hitCages[0].kill()
 
-        if chaser.hasCaughtPlayer(player.getHitbox()):
+        if chaser and chaser.hasCaughtPlayer(player.getHitbox()):
             result.bCaught = True
 
         return result

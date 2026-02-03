@@ -16,7 +16,6 @@ def initPygame() -> pygame.Surface:
     pygame.display.set_mode((1, 1))
     return pygame.image.load(str(bgPath)).convert()
 
-
 def extractGround(bg: pygame.Surface) -> None:
     w, h = bg.get_size()
     groundY = int(h * groundRatio)
@@ -33,7 +32,6 @@ def extractGround(bg: pygame.Surface) -> None:
 
     print(f"Done: {w // tileSize} ground tiles saved to {out}")
 
-
 def extractCeiling(bg: pygame.Surface) -> None:
     w, _ = bg.get_size()
     out = tilesDir / "ceiling"
@@ -47,7 +45,6 @@ def extractCeiling(bg: pygame.Surface) -> None:
         print(f"Extracted ceiling tile {i}")
 
     print(f"Done: {w // tileSize} ceiling tiles saved to {out}")
-
 
 def main(mode: str) -> None:
     bg = initPygame()

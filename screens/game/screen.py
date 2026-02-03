@@ -5,6 +5,7 @@ from pygame import Surface
 from pygame.event import Event
 from pygame.sprite import Group
 
+import flags
 from settings import GameState, ScreenSize, width, height, obstacleSpawnEvent
 from entities import (
     Player, Chaser, Obstacle, FallingCage, Ceiling,
@@ -39,10 +40,12 @@ class GameScreen:
         self.groundY = int(height * self.groundRatio)
 
         self.localPlayer = Player(self._s(320), self.groundY)
-        self.chaser = Chaser(self._s(-200), self.groundY)
+        self.chaser: Chaser | None = None if flags.bDisableChaser else Chaser(self._s(-200), self.groundY)
 
         self.allSprites: Group[pygame.sprite.Sprite] = pygame.sprite.Group()
-        self.allSprites.add(self.localPlayer, self.chaser)
+        self.allSprites.add(self.localPlayer)
+        if self.chaser:
+            self.allSprites.add(self.chaser)
 
         self.obstacles: Group[Obstacle] = pygame.sprite.Group()
         self.ceiling = Ceiling(self.screenSize[0], self.screenSize[1])
@@ -103,7 +106,8 @@ class GameScreen:
         self.groundY = int(newSize[1] * self.groundRatio)
 
         self.localPlayer.setGroundY(self.groundY)
-        self.chaser.setGroundY(self.groundY)
+        if self.chaser:
+            self.chaser.setGroundY(self.groundY)
 
         groundH = newSize[1] - self.groundY
         self.groundTilemap.on_resize(newSize[0], self.groundY, groundH)
@@ -120,10 +124,12 @@ class GameScreen:
         self.groundY = int(self.screenSize[1] * self.groundRatio)
 
         self.localPlayer = Player(self._s(320), self.groundY)
-        self.chaser = Chaser(self._s(-200), self.groundY)
+        self.chaser = None if flags.bDisableChaser else Chaser(self._s(-200), self.groundY)
 
         self.allSprites.empty()
-        self.allSprites.add(self.localPlayer, self.chaser)
+        self.allSprites.add(self.localPlayer)
+        if self.chaser:
+            self.allSprites.add(self.chaser)
 
         self.obstacles.empty()
         self.fallingCages.empty()
@@ -165,8 +171,9 @@ class GameScreen:
             self.invincibleTimer -= dt
 
         self.localPlayer.update(dt)
-        self.chaser.setTarget(self.localPlayer.rect.centerx)
-        self.chaser.update(dt)
+        if self.chaser:
+            self.chaser.setTarget(self.localPlayer.rect.centerx)
+            self.chaser.update(dt)
         self.obstacles.update(dt)
 
         playerX = self.localPlayer.rect.centerx
@@ -183,7 +190,8 @@ class GameScreen:
 
         if result.bHitObstacle or result.bHitCage:
             self.invincibleTimer = self.invincibleDuration
-            self.chaser.onPlayerHit()
+            if self.chaser:
+                self.chaser.onPlayerHit()
 
         if result.bCaught:
             self.bGameOver = True
@@ -200,7 +208,8 @@ class GameScreen:
         if not (self.invincibleTimer > 0 and int(self.invincibleTimer * 10) % 2 == 0):
             screen.blit(self.localPlayer.image, self.localPlayer.rect)
 
-        screen.blit(self.chaser.image, self.chaser.rect)
+        if self.chaser:
+            screen.blit(self.chaser.image, self.chaser.rect)
         self.ceilingTilemap.draw(screen)
 
         self.hud.draw(screen, self.score, self.bGameOver)

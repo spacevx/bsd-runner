@@ -1,7 +1,10 @@
+import flags
 from game import Game
 
 
 def main() -> None:
+    flags.parse()
+
     game = Game()
     game.run()
 
