@@ -10,6 +10,7 @@ from settings import (
 )
 from screens import MainMenu, GameScreen
 from strings import optionsTitle, optionsSubtitle, instructionEsc
+from discord import DiscordRPC
 
 
 class Game:
@@ -30,6 +31,10 @@ class Game:
 
         self.font: Font = pygame.font.Font(None, 48)
         self.smallFont: Font = pygame.font.Font(None, 32)
+
+        self.discordRpc: DiscordRPC = DiscordRPC()
+        self.rpcUpdateTimer: float = 0.0
+        self.rpcUpdateInterval: float = 5.0
 
     def setState(self, newState: GameState) -> None:
         if newState == GameState.GAME and self.state != GameState.GAME:
@@ -103,6 +108,8 @@ class Game:
         elif self.state == GameState.GAME:
             self.gameScreen.update(dt)
 
+        self._updateDiscordRpc(dt)
+
     def draw(self) -> None:
         if self.state == GameState.MENU:
             self.menu.draw(self.screen)
@@ -132,6 +139,20 @@ class Game:
         escRect = escSurf.get_rect(center=(w // 2, h - 50))
         self.screen.blit(escSurf, escRect)
 
+    def _updateDiscordRpc(self, dt: float) -> None:
+        self.rpcUpdateTimer += dt
+        if self.rpcUpdateTimer < self.rpcUpdateInterval:
+            return
+        self.rpcUpdateTimer = 0.0
+
+        if self.state == GameState.MENU or self.state == GameState.OPTIONS:
+            self.discordRpc.updateMenu()
+        elif self.state == GameState.GAME:
+            if self.gameScreen.bGameOver:
+                self.discordRpc.updateGameOver(self.gameScreen.score)
+            else:
+                self.discordRpc.updatePlaying(self.gameScreen.score)
+
     def run(self) -> None:
         while self.bRunning:
             dt: float = self.clock.tick(fps) / 1000.0
@@ -139,4 +160,5 @@ class Game:
             self.update(dt)
             self.draw()
 
+        self.discordRpc.close()
         pygame.quit()

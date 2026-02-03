@@ -13,3 +13,8 @@ instructionEsc: Final[str] = "Appuyez sur ÉCHAP pour revenir au menu"
 
 gameOver: Final[str] = "ATTRAPÉ!"
 gameRestart: Final[str] = "Appuyez sur R pour recommencer"
+
+rpcGameName: Final[str] = "MMA"
+rpcInMenu: Final[str] = "Dans le menu principal"
+rpcPlaying: Final[str] = "En train de jouer | Score: {score}"
+rpcGameOver: Final[str] = "Game Over | Score Final: {score}"
