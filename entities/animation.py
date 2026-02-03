@@ -5,6 +5,7 @@ import pygame
 from pygame import Surface
 from pygame.sprite import Sprite
 
+# Code who were basically in entities/player, but in case we need to reuse it for animating other entites (maybe like the chaser?)
 
 class AnimationFrame:
     def __init__(self, surface: Surface, delay: float) -> None:
@@ -21,10 +22,10 @@ class AnimatedSprite(Sprite):
         self.image: Surface = self.frames[0].surface
         self.rect: pygame.Rect = self.image.get_rect(midbottom=(x, y))
 
-    def _get_frame(self) -> Surface:
+    def _getFrame(self) -> Surface:
         return self.frames[self.frameIdx].surface
 
-    def update_animation(self, dt: float) -> bool:
+    def updateAnimation(self, dt: float) -> bool:
         self.animTimer += dt
         if self.animTimer >= self.frames[self.frameIdx].delay:
             self.animTimer = 0.0
@@ -33,17 +34,13 @@ class AnimatedSprite(Sprite):
         return False
 
 
-# Pattern is the regex for searching specific frame files (see assets/player/frames)
-def load_frames(path: Path, pattern: str = r"frame_(\d+)_delay-([\d.]+)s\.gif", scale: float = 1.0, fallback: Surface | None = None) -> list[AnimationFrame]:
-    if not path.exists():
-        if fallback:
-            return [AnimationFrame(fallback, 0.05)]
-        raise FileNotFoundError(f"Frames path not found: {path}")
-
-    ## instead of checking the regex x times in the loop we're doing it once, thanks to re.compile
+# Pattern is the regex for searching specific frame files (see assets/player/frames for example)
+def loadFrames(path: Path, pattern: str = r"frame_(\d+)_delay-([\d.]+)s\.gif", scale: float = 1.0) -> list[AnimationFrame]:
+    ## instead of checking the regex x times in the loop we're doing it once thanks to re.compile
     regex = re.compile(pattern)
     frames: list[AnimationFrame] = []
 
+    # Don't ask me about this lol
     for file in sorted(path.glob("*.gif")):
         if match := regex.match(file.name):
             delay = float(match.group(2))
@@ -55,10 +52,5 @@ def load_frames(path: Path, pattern: str = r"frame_(\d+)_delay-([\d.]+)s\.gif", 
                 frames.append(AnimationFrame(surf, delay))
             except pygame.error:
                 continue
-
-    if not frames:
-        if fallback:
-            return [AnimationFrame(fallback, 0.05)]
-        raise ValueError(f"No valid frames found in: {path}")
 
     return frames

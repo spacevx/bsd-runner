@@ -9,6 +9,7 @@ from pygame import Surface
 tileSize: Final[int] = 64
 
 
+# Slots is used severals time in the code, from what i saw on the docs it allow us to optimize memory by pre allocating memory for each field (con is we can't add fields in runtime) > Needs to see if i'm letting this?
 @dataclass(slots=True)
 class Tile:
     id: int

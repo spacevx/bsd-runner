@@ -4,8 +4,8 @@ from pygame.sprite import Sprite
 
 from settings import Color
 
-
 class Chaser(Sprite):
+    # TODO: Sync it based on the player data/speed?
     baseSpeed: float = 150.0
     speedBoostOnHit: float = 50.0
     approachOnHit: int = 80
@@ -30,6 +30,7 @@ class Chaser(Sprite):
         bodyColor: Color = (80, 50, 30)
         hornColor: Color = (200, 180, 150)
 
+        # TODO: Will be replaced by a real sprite player with animations
         pygame.draw.ellipse(surface, bodyColor, (10, 25, 110, 55))
         pygame.draw.circle(surface, bodyColor, (110, 45), 28)
         pygame.draw.polygon(surface, hornColor, [(120, 25), (140, 8), (130, 30)])
@@ -58,6 +59,7 @@ class Chaser(Sprite):
     def hasCaughtPlayer(self, playerRect: Rect) -> bool:
         return self.rect.colliderect(playerRect)
 
+    # called each frame in game/screens
     def update(self, dt: float) -> None:
         if (diff := self.targetX - self.posX) > 0:
             self.posX += min(self.speed * dt, diff)

@@ -4,8 +4,7 @@ import pygame
 from pygame import Surface, Rect
 from pygame.math import Vector2
 
-from settings import Color
-from entities.animation import AnimatedSprite, load_frames
+from entities.animation import AnimatedSprite, loadFrames
 from paths import assetsPath
 
 framesPath = assetsPath / "player" / "frames"
@@ -13,17 +12,16 @@ framesPath = assetsPath / "player" / "frames"
 class PlayerState(Enum):
     RUNNING = auto()
     JUMPING = auto()
-    SLIDING = auto()
-
+    SLIDING = auto() # TODO: Fix Sliding, actually when sliding it's colliding with the chaser so it's make the player loose (bc of _checkCollisions)
 
 class Player(AnimatedSprite):
     gravity: float = 1500.0
     jumpForce: float = -600.0
-    slideDuration: float = 0.5
+    slideDuration: float = 0.5 # TODO: Check this value?
     playerScale: float = 0.15
 
     def __init__(self, x: int, groundY: int) -> None:
-        frames = load_frames(framesPath, scale=self.playerScale, fallback=self._createFallback())
+        frames = loadFrames(framesPath, scale=self.playerScale)
         super().__init__(x, groundY, frames)
 
         self.groundY: int = groundY
@@ -32,27 +30,8 @@ class Player(AnimatedSprite):
         self.slideTimer: float = 0.0
         self.bOnGround: bool = True
 
-    @staticmethod
-    def _createFallback() -> Surface:
-        w, h = 40, 60
-        surf = pygame.Surface((w, h), pygame.SRCALPHA)
-
-        skin: Color = (210, 180, 140)
-        shorts: Color = (200, 30, 30)
-        shirt: Color = (255, 255, 255)
-
-        pygame.draw.circle(surf, skin, (w // 2, 12), 10)
-        pygame.draw.rect(surf, shirt, (w // 2 - 10, 22, 20, 18))
-        pygame.draw.rect(surf, shorts, (w // 2 - 10, 38, 20, 12))
-        pygame.draw.rect(surf, skin, (w // 2 - 8, 50, 6, 10))
-        pygame.draw.rect(surf, skin, (w // 2 + 2, 50, 6, 10))
-        pygame.draw.rect(surf, skin, (w // 2 - 18, 24, 8, 5))
-        pygame.draw.rect(surf, skin, (w // 2 + 10, 24, 8, 5))
-
-        return surf
-
     def _getSlideImage(self) -> Surface:
-        return pygame.transform.rotate(self._get_frame(), 90)
+        return pygame.transform.rotate(self._getFrame(), 90)
 
     def setGroundY(self, groundY: int) -> None:
         self.groundY = groundY
@@ -71,9 +50,10 @@ class Player(AnimatedSprite):
             self.velocity.y = self.jumpForce
             self.state = PlayerState.JUMPING
             self.bOnGround = False
-            self.image = self._get_frame()
+            self.image = self._getFrame()
             self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
 
+    # TODO: Add frame animations when sliding (so a real animation) and not just changing the rotation of the image
     def _slide(self) -> None:
         if self.bOnGround and self.state == PlayerState.RUNNING:
             self.state = PlayerState.SLIDING
@@ -84,7 +64,7 @@ class Player(AnimatedSprite):
     def _endSlide(self) -> None:
         if self.state == PlayerState.SLIDING:
             self.state = PlayerState.RUNNING
-            self.image = self._get_frame()
+            self.image = self._getFrame()
             self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
 
     def getHitbox(self) -> Rect:
@@ -96,13 +76,15 @@ class Player(AnimatedSprite):
         if self.state == PlayerState.SLIDING:
             self.image = self._getSlideImage()
         else:
-            self.image = self._get_frame()
+            self.image = self._getFrame()
 
+    # called each frame in game/screens
     def update(self, dt: float) -> None:
-        if self.update_animation(dt):
+        if self.updateAnimation(dt):
             self._updateImage()
 
         if self.state == PlayerState.JUMPING:
+            # TODO: Maybe Add animation when jumping? and not just changing the y vec lol
             self.velocity.y += self.gravity * dt
             self.rect.y += int(self.velocity.y * dt)
 
