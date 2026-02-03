@@ -24,7 +24,7 @@ class FallingCage(BaseObstacle):
     chainWidth: int = 8
     fallSpeed: float = 1200.0
     warningDuration: float = 0.6
-    triggerDistance: float = 500.0
+    triggerDistance: float = 200.0
     groundedDuration: float = 0.8
 
     def __init__(self, x: int, ceilingY: int, groundY: int, scrollSpeed: float = 400.0) -> None:

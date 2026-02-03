@@ -12,15 +12,15 @@ class ObstacleSpawner:
     baseW: int = 1920
     baseH: int = 1080
 
-    obstacleMinDelay: float = 1.2
-    obstacleMaxDelay: float = 2.5
+    obstacleMinDelay: float = 2.5
+    obstacleMaxDelay: float = 5.0
 
     def __init__(self, screenSize: ScreenSize, groundY: int, scrollSpeed: float) -> None:
         self.screenSize = screenSize
         self.scale = min(screenSize[0] / self.baseW, screenSize[1] / self.baseH)
         self.groundY = groundY
         self.scrollSpeed = scrollSpeed
-        self.obstacleSpawnDelay: float = 2.0
+        self.obstacleSpawnDelay: float = 3.0
         self.lastObstacleType: ObstacleType | None = None
 
     def _s(self, val: int) -> int:
@@ -58,6 +58,6 @@ class ObstacleSpawner:
         cages.add(cage)
 
     def reset(self) -> None:
-        self.obstacleSpawnDelay = 2.0
+        self.obstacleSpawnDelay = random.uniform(self.obstacleMinDelay, self.obstacleMaxDelay)
         self.lastObstacleType = None
         pygame.time.set_timer(obstacleSpawnEvent, int(self.obstacleSpawnDelay * 1000))
