@@ -27,11 +27,12 @@ class AnimatedSprite(Sprite):
 
     def updateAnimation(self, dt: float) -> bool:
         self.animTimer += dt
-        if self.animTimer >= self.frames[self.frameIdx].delay:
-            self.animTimer = 0.0
+        bAdvanced = False
+        while self.animTimer >= self.frames[self.frameIdx].delay:
+            self.animTimer -= self.frames[self.frameIdx].delay
             self.frameIdx = (self.frameIdx + 1) % len(self.frames)
-            return True
-        return False
+            bAdvanced = True
+        return bAdvanced
 
 
 # Pattern is the regex for searching specific frame files (see assets/player/frames for example)

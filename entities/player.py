@@ -17,11 +17,11 @@ class PlayerState(Enum):
 class Player(AnimatedSprite):
     gravity: float = 1500.0
     jumpForce: float = -600.0
-    slideDuration: float = 0.5 # TODO: Check this value?
+    slideDuration: float = 0.5
     playerScale: float = 0.15
 
     def __init__(self, x: int, groundY: int) -> None:
-        frames = loadFrames(framesPath, scale=self.playerScale)
+        frames = loadFrames(framesPath, scale=self.playerScale)[116:132]
         super().__init__(x, groundY, frames)
 
         self.groundY: int = groundY
