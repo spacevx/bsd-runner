@@ -25,7 +25,7 @@ class GameScreen:
     baseW: int = 1920
     baseH: int = 1080
     scrollSpeedConst: float = 400.0
-    groundRatio: float = 0.85
+    groundRatio: float = 1.0
 
     def __init__(self, setStateCallback: Callable[[GameState], None]) -> None:
         self.setState = setStateCallback
