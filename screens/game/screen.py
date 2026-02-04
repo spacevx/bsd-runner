@@ -128,7 +128,7 @@ class GameScreen:
             self.jumpSound.play()
 
     def _playSlideSound(self) -> None:
-        #joue le son lorsque le joueur slide
+        #joue le son de slide 
         if self.slideSound:
             self.slideSound.play()
 
@@ -154,8 +154,6 @@ class GameScreen:
     def _s(self, val: int) -> int:
         return max(1, int(val * self.scale))
 
-
-# Charge le background
     def _loadBackground(self) -> None:
         path = screensPath / "background.png"
         try:
