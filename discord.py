@@ -10,16 +10,16 @@ _BROWSER_ENV: Final[bool] = sys.platform == "emscripten"
 
 if not _BROWSER_ENV:
     try:
-        from pypresence import Presence, DiscordNotFound, PipeClosed
+        from pypresence import AioPresence, DiscordNotFound, PipeClosed
         _PYPRESENCE_AVAILABLE = True
     except ImportError:
         _PYPRESENCE_AVAILABLE = False
-        Presence = None  # type: ignore
+        AioPresence = None  # type: ignore
         DiscordNotFound = Exception  # type: ignore
         PipeClosed = Exception  # type: ignore
 else:
     _PYPRESENCE_AVAILABLE = False
-    Presence = None  # type: ignore
+    AioPresence = None  # type: ignore
     DiscordNotFound = Exception  # type: ignore
     PipeClosed = Exception  # type: ignore
 
@@ -34,20 +34,19 @@ class PresenceState(Enum):
 
 class DiscordRPC:
     def __init__(self) -> None:
-        self.rpc = None
+        self.rpc: AioPresence | None = None  # type: ignore
         self.bConnected: bool = False
         self.currentState: PresenceState | None = None
         self.currentScore: int = 0
         self.startTime: int = 0
-        self._connect()
 
-    def _connect(self) -> None:
-        if not _PYPRESENCE_AVAILABLE or Presence is None:
+    async def connect(self) -> None:
+        if not _PYPRESENCE_AVAILABLE or AioPresence is None:
             self.bConnected = False
             return
         try:
-            self.rpc = Presence(clientId)
-            self.rpc.connect()
+            self.rpc = AioPresence(clientId)
+            await self.rpc.connect()
             self.bConnected = True
             self.startTime = int(time.time())
         except (DiscordNotFound, PipeClosed, ConnectionRefusedError, FileNotFoundError):
@@ -55,14 +54,14 @@ class DiscordRPC:
         except Exception:
             self.bConnected = False
 
-    def updateMenu(self) -> None:
+    async def updateMenu(self) -> None:
         if not self.bConnected or self.rpc is None:
             return
         if self.currentState == PresenceState.MENU:
             return
         self.currentState = PresenceState.MENU
         try:
-            self.rpc.update(
+            await self.rpc.update(
                 state=rpcInMenu,
                 large_image="game_logo",
                 large_text=rpcGameName,
@@ -71,7 +70,7 @@ class DiscordRPC:
         except (PipeClosed, ConnectionRefusedError, BrokenPipeError, RuntimeError):
             self.bConnected = False
 
-    def updatePlaying(self, score: int) -> None:
+    async def updatePlaying(self, score: int) -> None:
         if not self.bConnected or self.rpc is None:
             return
         if self.currentState == PresenceState.PLAYING and self.currentScore == score:
@@ -79,7 +78,7 @@ class DiscordRPC:
         self.currentState = PresenceState.PLAYING
         self.currentScore = score
         try:
-            self.rpc.update(
+            await self.rpc.update(
                 state=rpcPlaying.format(score=score),
                 large_image="game_logo",
                 large_text=rpcGameName,
@@ -88,7 +87,7 @@ class DiscordRPC:
         except (PipeClosed, ConnectionRefusedError, BrokenPipeError, RuntimeError):
             self.bConnected = False
 
-    def updateGameOver(self, finalScore: int) -> None:
+    async def updateGameOver(self, finalScore: int) -> None:
         if not self.bConnected or self.rpc is None:
             return
         if self.currentState == PresenceState.GAME_OVER and self.currentScore == finalScore:
@@ -96,7 +95,7 @@ class DiscordRPC:
         self.currentState = PresenceState.GAME_OVER
         self.currentScore = finalScore
         try:
-            self.rpc.update(
+            await self.rpc.update(
                 state=rpcGameOver.format(score=finalScore),
                 large_image="game_logo",
                 large_text=rpcGameName,
@@ -105,10 +104,10 @@ class DiscordRPC:
         except (PipeClosed, ConnectionRefusedError, BrokenPipeError, RuntimeError):
             self.bConnected = False
 
-    def close(self) -> None:
+    async def close(self) -> None:
         if self.rpc is not None:
             try:
-                self.rpc.clear()
+                await self.rpc.clear()
             except (PipeClosed, ConnectionRefusedError, BrokenPipeError, Exception):
                 pass
             try:

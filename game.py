@@ -111,8 +111,6 @@ class Game:
         elif self.state == GameState.GAME:
             self.gameScreen.update(dt)
 
-        self._updateDiscordRpc(dt)
-
     def draw(self) -> None:
         if self.state == GameState.MENU:
             self.menu.draw(self.screen)
@@ -142,28 +140,30 @@ class Game:
         escRect = escSurf.get_rect(center=(w // 2, h - 50))
         self.screen.blit(escSurf, escRect)
 
-    def _updateDiscordRpc(self, dt: float) -> None:
+    async def _updateDiscordRpc(self, dt: float) -> None:
         self.rpcUpdateTimer += dt
         if self.rpcUpdateTimer < self.rpcUpdateInterval:
             return
         self.rpcUpdateTimer = 0.0
 
         if self.state == GameState.MENU or self.state == GameState.OPTIONS:
-            self.discordRpc.updateMenu()
+            await self.discordRpc.updateMenu()
         elif self.state == GameState.GAME:
             if self.gameScreen.bGameOver:
-                self.discordRpc.updateGameOver(self.gameScreen.score)
+                await self.discordRpc.updateGameOver(self.gameScreen.score)
             else:
-                self.discordRpc.updatePlaying(self.gameScreen.score)
+                await self.discordRpc.updatePlaying(self.gameScreen.score)
 
     async def run(self) -> None:
+        await self.discordRpc.connect()
         try:
             while self.bRunning:
                 dt: float = self.clock.tick(fps) / 1000.0
                 self.handleEvents()
                 self.update(dt)
+                await self._updateDiscordRpc(dt)
                 self.draw()
                 await asyncio.sleep(0)
         finally:
-            self.discordRpc.close()
+            await self.discordRpc.close()
             pygame.quit()
