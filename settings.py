@@ -5,8 +5,8 @@ import pygame
 
 from strings import windowTitle
 
-width: Final[int] = 1920
-height: Final[int] = 1080
+width: Final[int] = 1280
+height: Final[int] = 720
 minWidth: Final[int] = 640
 minHeight: Final[int] = 480
 fps: Final[int] = 60
