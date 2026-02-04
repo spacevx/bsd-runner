@@ -1,6 +1,6 @@
 import math
 import sys
-from typing import Callable
+from typing import Any, Callable
 
 import pygame
 from pygame import Surface
@@ -11,10 +11,10 @@ from settings import width, height, GameState, ScreenSize
 
 _BROWSER: bool = sys.platform == "emscripten"
 
-pygame_gui = None
-UIManager = None
-UIButton = None
-ObjectID = None
+pygame_gui: Any = None
+UIManager: Any = None
+UIButton: Any = None
+ObjectID: Any = None
 
 if not _BROWSER:
     pygame_gui = __import__("pygame_gui")
@@ -98,8 +98,9 @@ class MainMenu:
 
         self.bBrowser: bool = _BROWSER
 
+        self.manager: Any = None
         if not self.bBrowser:
-            self.manager: UIManager = UIManager(self.screenSize, theme_path=None)
+            self.manager = UIManager(self.screenSize, theme_path=None)
             self._setupTheme()
 
         self.bgCache: Surface | None = None
@@ -110,16 +111,15 @@ class MainMenu:
 
         self._buildCaches()
 
+        self.startBtn: Any = None
+        self.optionsBtn: Any = None
+        self.quitBtn: Any = None
+        self.buttonFont: Font | None = None
+
         if self.bBrowser:
-            self.buttonFont: Font = pygame.font.Font(None, self._s(28))
-            self.startBtn: _SimpleButton | None = None
-            self.optionsBtn: _SimpleButton | None = None
-            self.quitBtn: _SimpleButton | None = None
+            self.buttonFont = pygame.font.Font(None, self._s(28))
             self._createSimpleButtons()
         else:
-            self.startBtn: UIButton | None = None
-            self.optionsBtn: UIButton | None = None
-            self.quitBtn: UIButton | None = None
             self._createButtons()
 
         self.titleFont: Font = pygame.font.Font(None, self._s(160))
@@ -172,6 +172,7 @@ class MainMenu:
 
     def _createSimpleButtons(self) -> None:
         rects = self._getButtonRects()
+        assert self.buttonFont is not None
         self.startBtn = _SimpleButton(rects[0], "COMMENCER LE JEU", self.buttonFont)
         self.optionsBtn = _SimpleButton(rects[1], "OPTIONS", self.buttonFont)
         self.quitBtn = _SimpleButton(rects[2], "QUITTER", self.buttonFont)

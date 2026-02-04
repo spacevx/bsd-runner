@@ -1,4 +1,4 @@
-from typing import Final, TYPE_CHECKING
+from typing import Any, Final
 from enum import Enum, auto
 import time
 import sys
@@ -8,20 +8,20 @@ from strings import rpcGameName, rpcInMenu, rpcPlaying, rpcGameOver
 
 _BROWSER_ENV: Final[bool] = sys.platform == "emscripten"
 
+AioPresence: Any = None
+DiscordNotFound: Any = Exception
+PipeClosed: Any = Exception
+_PYPRESENCE_AVAILABLE: bool = False
+
 if not _BROWSER_ENV:
     try:
-        from pypresence import AioPresence, DiscordNotFound, PipeClosed
+        from pypresence import AioPresence as _AioPresence, DiscordNotFound as _DiscordNotFound, PipeClosed as _PipeClosed  # type: ignore[attr-defined]
+        AioPresence = _AioPresence
+        DiscordNotFound = _DiscordNotFound
+        PipeClosed = _PipeClosed
         _PYPRESENCE_AVAILABLE = True
     except ImportError:
-        _PYPRESENCE_AVAILABLE = False
-        AioPresence = None  # type: ignore
-        DiscordNotFound = Exception  # type: ignore
-        PipeClosed = Exception  # type: ignore
-else:
-    _PYPRESENCE_AVAILABLE = False
-    AioPresence = None  # type: ignore
-    DiscordNotFound = Exception  # type: ignore
-    PipeClosed = Exception  # type: ignore
+        pass
 
 
 clientId: Final[str] = "1468228058472386624"
@@ -34,7 +34,7 @@ class PresenceState(Enum):
 
 class DiscordRPC:
     def __init__(self) -> None:
-        self.rpc: AioPresence | None = None  # type: ignore
+        self.rpc: Any = None
         self.bConnected: bool = False
         self.currentState: PresenceState | None = None
         self.currentScore: int = 0
