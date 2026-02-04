@@ -3,7 +3,7 @@ from enum import Enum, auto
 from pygame import Rect
 from pygame.sprite import Group
 
-from entities.animation import AnimatedSprite, loadFrames
+from entities.animation import AnimatedSprite, AnimationFrame, loadFrames
 from entities.obstacle.cage import FallingCage, CageState
 from entities.player import getRunningHeight
 from paths import assetsPath
@@ -69,7 +69,7 @@ class Chaser(AnimatedSprite):
     def hasCaughtPlayer(self, playerRect: Rect) -> bool:
         return self.rect.colliderect(playerRect)
 
-    def _setFrames(self, frames: list) -> None:
+    def _setFrames(self, frames: list[AnimationFrame]) -> None:
         self.frames = frames
         self.frameIdx = 0
         self.animTimer = 0.0
