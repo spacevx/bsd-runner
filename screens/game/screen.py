@@ -190,7 +190,7 @@ class GameScreen:
         self.localPlayer.update(dt)
         if self.chaser:
             self.chaser.setTarget(self.localPlayer.rect.centerx)
-            self.chaser.update(dt, self.fallingCages)
+            self.chaser.update(dt, self.fallingCages, self.obstacles)
         self.obstacles.update(dt)
 
         playerX = self.localPlayer.rect.centerx

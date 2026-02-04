@@ -5,6 +5,7 @@ from pygame.sprite import Group
 
 from entities.animation import AnimatedSprite, AnimationFrame, loadFrames
 from entities.obstacle.cage import FallingCage, CageState
+from entities.obstacle.lane import Obstacle
 from entities.player import getRunningHeight
 from paths import assetsPath
 
@@ -31,6 +32,7 @@ class Chaser(AnimatedSprite):
     jumpForce: float = -850.0
     jumpOffForce: float = -300.0
     cageDetectionRange: float = 550.0
+    obstacleDetectionRange: float = 300.0
     jumpScaleMult: float = 1.5
 
     def __init__(self, x: int, groundY: int) -> None:
@@ -100,6 +102,15 @@ class Chaser(AnimatedSprite):
                 return cage
         return None
 
+    def _findObstacleToJumpOver(self, obstacles: Group[Obstacle]) -> Obstacle | None:
+        for obstacle in obstacles:
+            obstacleCenterX = obstacle.rect.centerx
+            chaserCenterX = self.rect.centerx
+            dist = obstacleCenterX - chaserCenterX
+            if 0 < dist < self.obstacleDetectionRange:
+                return obstacle
+        return None
+
     def _checkLandOnCage(self, cages: Group[FallingCage]) -> FallingCage | None:
         for cage in cages:
             if cage.state not in (CageState.FALLING, CageState.GROUNDED):
@@ -126,7 +137,7 @@ class Chaser(AnimatedSprite):
         self.image = self._getFrame()
         self.rect = self.image.get_rect(midbottom=oldMidbottom)
 
-    def update(self, dt: float, cages: Group[FallingCage] | None = None) -> None:
+    def update(self, dt: float, cages: Group[FallingCage] | None = None, obstacles: Group[Obstacle] | None = None) -> None:
         if self.updateAnimation(dt):
             self._updateImage()
 
@@ -134,6 +145,10 @@ class Chaser(AnimatedSprite):
             if cages:
                 targetCage = self._findCageToJumpOn(cages)
                 if targetCage:
+                    self._jump()
+            if obstacles and self.bOnGround:
+                targetObstacle = self._findObstacleToJumpOver(obstacles)
+                if targetObstacle:
                     self._jump()
 
         elif self.state == ChaserState.JUMPING:
