@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import pygame
 from pygame.sprite import Group
 
-from entities import Player, PlayerState, Chaser, Obstacle, ObstacleType, FallingCage, CageState
+from entities import Player, PlayerState, Chaser, Obstacle, FallingCage, CageState
 
 
 @dataclass
@@ -34,12 +34,8 @@ class CollisionSystem:
         if not playerHitbox.colliderect(obstacleHitbox):
             return False
 
-        if obstacle.obstacleType == ObstacleType.LOW and player.state == PlayerState.JUMPING:
-            if playerHitbox.bottom < obstacleHitbox.top + self._s(20):
-                return False
-
-        if obstacle.obstacleType == ObstacleType.HIGH and player.state == PlayerState.SLIDING:
-            if playerHitbox.top > obstacleHitbox.bottom - self._s(15):
+        if player.state == PlayerState.JUMPING:
+            if playerHitbox.bottom < obstacleHitbox.top + self._s(15):
                 return False
 
         return True
@@ -55,7 +51,7 @@ class CollisionSystem:
             return False
 
         if player.state == PlayerState.SLIDING:
-            if playerHitbox.top > cageHitbox.bottom - self._s(50):
+            if playerHitbox.top > cageHitbox.bottom - self._s(150):
                 return False
 
         return True

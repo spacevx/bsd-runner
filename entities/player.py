@@ -18,8 +18,8 @@ class PlayerState(Enum):
     TRAPPED = auto()
 
 class Player(AnimatedSprite):
-    gravity: float = 1500.0
-    jumpForce: float = -600.0
+    gravity: float = 1100.0
+    jumpForce: float = -650.0
     slideDuration: float = 0.5
     slideCooldown: float = 0.8
     playerScale: float = 0.15
@@ -102,7 +102,7 @@ class Player(AnimatedSprite):
 
     def getHitbox(self) -> Rect:
         if self.state == PlayerState.SLIDING:
-            return self.rect.inflate(-10, -5)
+            return self.rect.inflate(-20, -200)
         return self.rect.inflate(-10, -10)
 
     def _updateImage(self) -> None:

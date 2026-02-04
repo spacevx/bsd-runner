@@ -4,7 +4,7 @@ import pygame
 from pygame import Surface, Rect
 
 from settings import Color
-from .base import BaseObstacle, ObstacleType
+from .base import BaseObstacle
 
 
 class CageState(Enum):
@@ -24,12 +24,11 @@ class FallingCage(BaseObstacle):
     chainWidth: int = 8
     fallSpeed: float = 700.0
     warningDuration: float = 0.6
-    triggerDistance: float = 150.0
+    triggerDistance: float = 275.0
     groundedDuration: float = 0.8
 
     def __init__(self, x: int, ceilingY: int, groundY: int, scrollSpeed: float = 400.0) -> None:
         super().__init__()
-        self.obstacleType = ObstacleType.FALLING_CAGE
         self.speed = scrollSpeed
         self.state = CageState.HANGING
         self.ceilingY = ceilingY

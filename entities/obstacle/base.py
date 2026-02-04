@@ -1,19 +1,11 @@
 from abc import abstractmethod
-from enum import Enum, auto
 
 import pygame
 from pygame import Surface, Rect
 from pygame.sprite import Sprite
 
 
-class ObstacleType(Enum):
-    LOW = auto()
-    HIGH = auto()
-    FALLING_CAGE = auto()
-
-
 class BaseObstacle(Sprite):
-    obstacleType: ObstacleType
     speed: float
     image: Surface
     rect: Rect

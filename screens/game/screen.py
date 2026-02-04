@@ -177,7 +177,8 @@ class GameScreen:
         self.groundTilemap.update(scrollDelta)
         cageXs = self.ceilingTilemap.update(scrollDelta)
         for cx in cageXs:
-            self.spawner.spawnCageAt(cx, self.ceiling.height, self.fallingCages)
+            if self.spawner.canSpawnCage():
+                self.spawner.spawnCageAt(cx, self.ceiling.height, self.fallingCages)
 
         self.score += int(self.scrollSpeed * dt * 0.1)
 

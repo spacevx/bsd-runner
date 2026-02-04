@@ -1,11 +1,12 @@
 import random
+import time
 
 import pygame
 from pygame.event import Event
 from pygame.sprite import Group
 
 from settings import ScreenSize, obstacleSpawnEvent
-from entities import Obstacle, ObstacleType, FallingCage
+from entities import Obstacle, FallingCage
 
 
 class ObstacleSpawner:
@@ -14,6 +15,7 @@ class ObstacleSpawner:
 
     obstacleMinDelay: float = 2.5
     obstacleMaxDelay: float = 5.0
+    minGapBetweenTypes: float = 2.0
 
     def __init__(self, screenSize: ScreenSize, groundY: int, scrollSpeed: float) -> None:
         self.screenSize = screenSize
@@ -21,7 +23,8 @@ class ObstacleSpawner:
         self.groundY = groundY
         self.scrollSpeed = scrollSpeed
         self.obstacleSpawnDelay: float = 3.0
-        self.lastObstacleType: ObstacleType | None = None
+        self.lastBodyTime: float = 0.0
+        self.lastCageTime: float = 0.0
 
     def _s(self, val: int) -> int:
         return max(1, int(val * self.scale))
@@ -33,31 +36,30 @@ class ObstacleSpawner:
 
     def handleEvent(self, event: Event, obstacles: Group[Obstacle], bGameOver: bool) -> None:
         if event.type == obstacleSpawnEvent and not bGameOver:
-            self._spawnObstacle(obstacles)
+            now = time.monotonic()
+            if now - self.lastCageTime >= self.minGapBetweenTypes:
+                self._spawnObstacle(obstacles)
+                self.lastBodyTime = now
             self.obstacleSpawnDelay = random.uniform(self.obstacleMinDelay, self.obstacleMaxDelay)
             pygame.time.set_timer(obstacleSpawnEvent, int(self.obstacleSpawnDelay * 1000))
 
     def _spawnObstacle(self, obstacles: Group[Obstacle]) -> None:
         x = self.screenSize[0] + self._s(100)
-
-        weights: list[float] = {
-            ObstacleType.LOW: [0.3, 0.7],
-            ObstacleType.HIGH: [0.7, 0.3],
-            None: [0.5, 0.5]
-        }[self.lastObstacleType]
-
-        obsType = random.choices([ObstacleType.LOW, ObstacleType.HIGH], weights=weights)[0]
-        self.lastObstacleType = obsType
-
-        obstacle = Obstacle(x, self.groundY, obsType)
+        obstacle = Obstacle(x, self.groundY)
         obstacle.speed = self.scrollSpeed
         obstacles.add(obstacle)
 
+    def canSpawnCage(self) -> bool:
+        now = time.monotonic()
+        return now - self.lastBodyTime >= self.minGapBetweenTypes
+
     def spawnCageAt(self, x: int, ceilingY: int, cages: Group[FallingCage]) -> None:
+        self.lastCageTime = time.monotonic()
         cage = FallingCage(x, ceilingY, self.groundY, self.scrollSpeed)
         cages.add(cage)
 
     def reset(self) -> None:
         self.obstacleSpawnDelay = random.uniform(self.obstacleMinDelay, self.obstacleMaxDelay)
-        self.lastObstacleType = None
+        self.lastBodyTime = 0.0
+        self.lastCageTime = 0.0
         pygame.time.set_timer(obstacleSpawnEvent, int(self.obstacleSpawnDelay * 1000))
