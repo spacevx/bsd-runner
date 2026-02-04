@@ -2,8 +2,9 @@ import pygame
 from pygame import Surface
 from pygame.font import Font
 
+from keybindings import keyBindings
 from settings import ScreenSize, white, gold
-from strings import gameOver, gameRestart
+from strings import gameOver, gameRestart, hudJump, hudSlide
 
 
 class HUD:
@@ -50,18 +51,52 @@ class HUD:
         self._drawTextWithShadow(screen, scoreText, self.scoreFont, white, (scoreX, scoreY), self._s(3))
 
     def drawControls(self, screen: Surface) -> None:
-        controlsText = "ESPACE: Sauter | BAS: Glisser"
+        iconSize = self._s(36)
         ctrlX = self._s(30)
-        ctrlY = self.screenSize[1] - self._s(50)
+        ctrlY = self.screenSize[1] - self._s(55)
 
-        ctrlSurf = self.smallFont.render(controlsText, True, white)
-        ctrlW, ctrlH = ctrlSurf.get_size()
+        jumpIcon = keyBindings.getKeyIcon(keyBindings.jump, iconSize)
+        slideIcon = keyBindings.getKeyIcon(keyBindings.slide, iconSize)
 
-        bgSurf = pygame.Surface((ctrlW + self._s(20), ctrlH + self._s(10)), pygame.SRCALPHA)
+        jumpLabel = self.smallFont.render(hudJump, True, white)
+        slideLabel = self.smallFont.render(hudSlide, True, white)
+        separator = self.smallFont.render("|", True, (150, 150, 150))
+
+        totalW = iconSize + self._s(8) + jumpLabel.get_width() + self._s(20)
+        totalW += separator.get_width() + self._s(20)
+        totalW += iconSize + self._s(8) + slideLabel.get_width()
+        boxH = iconSize + self._s(10)
+
+        bgSurf = pygame.Surface((totalW + self._s(20), boxH), pygame.SRCALPHA)
         pygame.draw.rect(bgSurf, (0, 0, 0, 100), bgSurf.get_rect(), border_radius=self._s(5))
         screen.blit(bgSurf, (ctrlX - self._s(10), ctrlY - self._s(5)))
 
-        self._drawTextWithShadow(screen, controlsText, self.smallFont, white, (ctrlX, ctrlY), self._s(2))
+        x = ctrlX
+        centerY = ctrlY + boxH // 2 - self._s(5)
+
+        if jumpIcon:
+            screen.blit(jumpIcon, (x, centerY - iconSize // 2))
+            x += iconSize + self._s(8)
+        else:
+            fallback = self.smallFont.render(keyBindings.getKeyName(keyBindings.jump), True, white)
+            screen.blit(fallback, (x, centerY - fallback.get_height() // 2))
+            x += fallback.get_width() + self._s(8)
+
+        screen.blit(jumpLabel, (x, centerY - jumpLabel.get_height() // 2))
+        x += jumpLabel.get_width() + self._s(20)
+
+        screen.blit(separator, (x, centerY - separator.get_height() // 2))
+        x += separator.get_width() + self._s(20)
+
+        if slideIcon:
+            screen.blit(slideIcon, (x, centerY - iconSize // 2))
+            x += iconSize + self._s(8)
+        else:
+            fallback = self.smallFont.render(keyBindings.getKeyName(keyBindings.slide), True, white)
+            screen.blit(fallback, (x, centerY - fallback.get_height() // 2))
+            x += fallback.get_width() + self._s(8)
+
+        screen.blit(slideLabel, (x, centerY - slideLabel.get_height() // 2))
 
     def drawGameOver(self, screen: Surface, score: int) -> None:
         w, h = self.screenSize

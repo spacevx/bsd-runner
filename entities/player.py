@@ -5,6 +5,7 @@ from pygame import Rect, Surface
 from pygame.math import Vector2
 
 from entities.animation import AnimatedSprite, AnimationFrame, loadFrames
+from keybindings import keyBindings
 from paths import assetsPath
 
 runningFramesPath = assetsPath / "player" / "running" / "frames"
@@ -71,9 +72,9 @@ class Player(AnimatedSprite):
 
     def handleInput(self, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
-            if event.key in (pygame.K_SPACE, pygame.K_UP, pygame.K_z, pygame.K_w):
+            if event.key == keyBindings.jump:
                 self._jump()
-            elif event.key in (pygame.K_DOWN, pygame.K_s):
+            elif event.key == keyBindings.slide:
                 self._slide()
 
     def _jump(self) -> None:

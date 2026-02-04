@@ -1,17 +1,14 @@
 import asyncio
-import os
 import pygame
 from pygame import Surface
 from pygame.event import Event
 from pygame.time import Clock
-from pygame.font import Font
 
 from settings import (
     width, height, minWidth, minHeight, fps, title,
-    darkGray, white, GameState, displayFlags, ScreenSize
+    GameState, displayFlags, ScreenSize
 )
-from screens import MainMenu, GameScreen
-from strings import optionsTitle, optionsSubtitle, instructionEsc
+from screens import MainMenu, GameScreen, OptionsScreen
 from discord import DiscordRPC
 
 
@@ -31,9 +28,7 @@ class Game:
 
         self.menu: MainMenu = MainMenu(self.setState)
         self.gameScreen: GameScreen = GameScreen(self.setState)
-
-        self.font: Font = pygame.font.Font(None, 48)
-        self.smallFont: Font = pygame.font.Font(None, 32)
+        self.optionsScreen: OptionsScreen = OptionsScreen((width, height), self.setState)
 
         self.discordRpc: DiscordRPC = DiscordRPC()
         self.rpcUpdateTimer: float = 0.0
@@ -70,6 +65,7 @@ class Game:
 
         self.menu.onResize(self.screenSize)
         self.gameScreen.onResize(self.screenSize)
+        self.optionsScreen.onResize(self.screenSize)
 
     def _handleResize(self, event: Event) -> None:
         w: int = max(event.w, minWidth)
@@ -78,6 +74,7 @@ class Game:
         self.screen = pygame.display.set_mode(self.screenSize, displayFlags)
         self.menu.onResize(self.screenSize)
         self.gameScreen.onResize(self.screenSize)
+        self.optionsScreen.onResize(self.screenSize)
 
     def handleEvents(self) -> None:
         for event in pygame.event.get():
@@ -102,6 +99,7 @@ class Game:
                     self.setState(GameState.MENU)
 
             elif self.state == GameState.OPTIONS:
+                self.optionsScreen.handleEvent(event)
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and not self.bFullscreen:
                     self.setState(GameState.MENU)
 
@@ -110,6 +108,8 @@ class Game:
             self.menu.update(dt)
         elif self.state == GameState.GAME:
             self.gameScreen.update(dt)
+        elif self.state == GameState.OPTIONS:
+            self.optionsScreen.update(dt)
 
     def draw(self) -> None:
         if self.state == GameState.MENU:
@@ -119,26 +119,9 @@ class Game:
             self.gameScreen.draw(self.screen)
 
         elif self.state == GameState.OPTIONS:
-            self._drawPlaceholder(optionsTitle, optionsSubtitle)
+            self.optionsScreen.draw(self.screen)
 
         pygame.display.flip()
-
-    def _drawPlaceholder(self, titleText: str, subtitle: str) -> None:
-        w, h = self.screenSize
-
-        self.screen.fill(darkGray)
-
-        titleSurf: Surface = self.font.render(titleText, True, white)
-        titleRect = titleSurf.get_rect(center=(w // 2, h // 2 - 30))
-        self.screen.blit(titleSurf, titleRect)
-
-        subSurf: Surface = self.smallFont.render(subtitle, True, white)
-        subRect = subSurf.get_rect(center=(w // 2, h // 2 + 20))
-        self.screen.blit(subSurf, subRect)
-
-        escSurf: Surface = self.smallFont.render(instructionEsc, True, (150, 150, 150))
-        escRect = escSurf.get_rect(center=(w // 2, h - 50))
-        self.screen.blit(escSurf, escRect)
 
     async def _updateDiscordRpc(self, dt: float) -> None:
         self.rpcUpdateTimer += dt
