@@ -15,12 +15,13 @@ playerRunningFramesPath = assetsPath / "player" / "running" / "frames"
 # Those are called lanes but they are dead body on the ground, mispell name is because at the beginning it wasn't supposed to be
 # dead bodies
 
-lanesDir: Path = assetsPath / "lanes"
+_defaultDir: Path = assetsPath / "lanes"
 
 class Obstacle(BaseObstacle):
     _textures: list[Surface] | None = None
     _cache: dict[tuple[int, int, int], Surface] = {}
     _playerHeight: int | None = None
+    _obstacleDir: Path = _defaultDir
 
     playerScale: float = 0.15
     heightRatio: float = 0.7
@@ -44,6 +45,12 @@ class Obstacle(BaseObstacle):
         self.rect = self.image.get_rect(centerx=x, bottom=groundY)
 
     @classmethod
+    def setDir(cls, path: Path) -> None:
+        if path != cls._obstacleDir:
+            cls._obstacleDir = path
+            cls.clearCache()
+
+    @classmethod
     def clearCache(cls) -> None:
         cls._textures = None
         cls._cache.clear()
@@ -54,7 +61,7 @@ class Obstacle(BaseObstacle):
         if cls._textures is not None:
             return cls._textures
 
-        paths = sorted(lanesDir.glob("body_*.png"))
+        paths = sorted(cls._obstacleDir.glob("*.png"))
         loaded: list[Surface] = []
         for p in paths:
             try:

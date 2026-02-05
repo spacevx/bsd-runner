@@ -25,6 +25,11 @@ _priBorder = (200, 60, 70)
 _priBorderH = (235, 90, 100)
 _priBorderP = (160, 25, 35)
 
+_disTopN = (22, 23, 28)
+_disBotN = (15, 16, 20)
+_disBorder = (35, 37, 45)
+_disText = (90, 92, 100)
+
 _textColor = (240, 240, 245)
 _textShadow = (0, 0, 0)
 _shadowAlpha = 70
@@ -63,10 +68,12 @@ class ModernButton:
         self.bHovered: bool = False
         self.bPressed: bool = False
         self.bFocused: bool = False
+        self.bDisabled: bool = False
 
         self._normalSurf: Surface | None = None
         self._hoverSurf: Surface | None = None
         self._pressedSurf: Surface | None = None
+        self._disabledSurf: Surface | None = None
         self._shadowSurf: Surface | None = None
         self._glowSurf: Surface | None = None
         self._dirty: bool = True
@@ -90,7 +97,14 @@ class ModernButton:
             self.rect.height = h
             self._dirty = True
 
+    def setDisabled(self, bDisabled: bool) -> None:
+        if self.bDisabled != bDisabled:
+            self.bDisabled = bDisabled
+            self._dirty = True
+
     def handleEvent(self, event: Event) -> bool:
+        if self.bDisabled:
+            return False
         if event.type == pygame.MOUSEMOTION:
             self.bHovered = self.rect.collidepoint(event.pos)
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -123,6 +137,7 @@ class ModernButton:
         self._normalSurf = self._renderState(w, h, cr, topN, botN, bgAlpha, borderN)
         self._hoverSurf = self._renderState(w, h, cr, topH, botH, bgAlpha, borderH)
         self._pressedSurf = self._renderState(w, h, cr, topP, botP, bgAlpha, borderP, bPressed=True)
+        self._disabledSurf = self._renderState(w, h, cr, _disTopN, _disBotN, 200, _disBorder, textColor=_disText)
 
         sw, sh = w + 6, h + 6
         self._shadowSurf = Surface((sw, sh), pygame.SRCALPHA)
@@ -140,6 +155,7 @@ class ModernButton:
         top: tuple[int, int, int], bot: tuple[int, int, int],
         alpha: int, border: tuple[int, int, int],
         bPressed: bool = False,
+        textColor: tuple[int, int, int] = _textColor,
     ) -> Surface:
         surf = Surface((w, h), pygame.SRCALPHA)
         bg = _gradientRect(w, h, top, bot, alpha, cr)
@@ -147,7 +163,7 @@ class ModernButton:
         pygame.draw.rect(surf, border, (0, 0, w, h), 1, border_radius=cr)
 
         shadow = self.font.render(self.text, True, _textShadow)
-        main = self.font.render(self.text, True, _textColor)
+        main = self.font.render(self.text, True, textColor)
         cx, cy = w // 2, h // 2
         pressOff = 1 if bPressed else 0
 
@@ -169,6 +185,11 @@ class ModernButton:
         assert self._pressedSurf is not None
 
         screen.blit(self._shadowSurf, (self.rect.x - 3, self.rect.y - 1))
+
+        if self.bDisabled:
+            assert self._disabledSurf is not None
+            screen.blit(self._disabledSurf, self.rect)
+            return
 
         bHighlight = self.bHovered or self.bFocused
         if bHighlight and not self.bPressed:

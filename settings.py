@@ -37,6 +37,7 @@ class GameState(Enum):
 obstacleSpawnEvent: Final[int] = pygame.USEREVENT + 1
 
 bSoundEnabled: bool = True
+bLevel2Unlocked: bool = False
 
 JOY_DEADZONE: Final[float] = 0.3
 JOY_AXIS_THRESHOLD: Final[float] = 0.5

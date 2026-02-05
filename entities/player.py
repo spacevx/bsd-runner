@@ -40,8 +40,6 @@ class PlayerState(Enum):
 
 
 class Player(AnimatedSprite):
-    gravity: float = 1100.0
-    jumpForce: float = -650.0
     slideDuration: float = 0.5
     slideCooldown: float = 0.8
     playerScale: float = 0.15
@@ -49,7 +47,9 @@ class Player(AnimatedSprite):
     trappedScaleMult: float = 1.2
     slideImmunityWindow: float = 0.8
 
-    def __init__(self, x: int, groundY: int) -> None:
+    def __init__(self, x: int, groundY: int, gravity: float = 1100.0, jumpForce: float = -650.0,
+                 bDoubleJump: bool = False, doubleJumpForce: float = -780.0,
+                 bSlideEnabled: bool = True, coyoteTime: float = 0.0, jumpBuffer: float = 0.0) -> None:
         # Please don't remove the slice on the frames here, some frames are invalid, so if you took/render all the frames for running
         # It's going to create a small bug where the running animation will broke for 1seconds (so 1000 frames) like static player
         runningFrames = loadFrames(runningFramesPath, scale=self.playerScale, frameSlice=slice(116, 132))
@@ -72,6 +72,16 @@ class Player(AnimatedSprite):
         self.slideBoostTimer: float = 0.0
         self.slideCooldownTimer: float = 0.0
         self.bOnGround: bool = True
+        self.gravity: float = gravity
+        self.jumpForce: float = jumpForce
+        self.bDoubleJumpEnabled: bool = bDoubleJump
+        self.doubleJumpForce: float = doubleJumpForce
+        self.bDoubleJumpAvailable: bool = False
+        self.bSlideEnabled: bool = bSlideEnabled
+        self.coyoteTime: float = coyoteTime
+        self.jumpBufferTime: float = jumpBuffer
+        self.coyoteTimer: float = 0.0
+        self.jumpBufferTimer: float = 0.0
 
     # Used for setting the frames of the player (runnning, sliding, trapped) check animation.py for more info
     def _setFrames(self, frames: list[AnimationFrame]) -> None:
@@ -87,21 +97,33 @@ class Player(AnimatedSprite):
     def handleInput(self, event: pygame.event.Event, inputEvent: "InputEvent | None" = None) -> None:
         from entities.input.manager import GameAction, InputEvent
 
+        bJumpPressed = False
+        bSlidePressed = False
+
         if inputEvent:
             if inputEvent.action == GameAction.JUMP and inputEvent.bPressed:
-                self._jump()
+                bJumpPressed = True
             elif inputEvent.action == GameAction.SLIDE and inputEvent.bPressed:
-                self._slide()
+                bSlidePressed = True
 
         if event.type == pygame.KEYDOWN:
             if event.key == keyBindings.jump:
-                self._jump()
+                bJumpPressed = True
             elif event.key == keyBindings.slide:
-                self._slide()
+                bSlidePressed = True
 
-    def _jump(self) -> None:
+        if bJumpPressed:
+            if not self._jump():
+                self.jumpBufferTimer = self.jumpBufferTime
+        if bSlidePressed:
+            self._slide()
+
+    def _jump(self) -> bool:
         global _jumpSound
-        if self.bOnGround and self.state != PlayerState.SLIDING:
+        if self.state == PlayerState.SLIDING:
+            return False
+        bCoyote = not self.bOnGround and self.coyoteTimer > 0
+        if self.bOnGround or bCoyote:
             if _jumpSound is None:
                 _jumpSound = pygame.mixer.Sound(jumpSoundPath)
             if settings.bSoundEnabled:
@@ -109,11 +131,27 @@ class Player(AnimatedSprite):
             self.velocity.y = self.jumpForce
             self.state = PlayerState.JUMPING
             self.bOnGround = False
+            self.coyoteTimer = 0.0
+            self.bDoubleJumpAvailable = True
             self.image = self._getFrame()
             self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
+            return True
+        elif self.bDoubleJumpEnabled and self.bDoubleJumpAvailable:
+            if _jumpSound is None:
+                _jumpSound = pygame.mixer.Sound(jumpSoundPath)
+            if settings.bSoundEnabled:
+                _jumpSound.play()
+            self.velocity.y = self.doubleJumpForce
+            self.bDoubleJumpAvailable = False
+            self.image = self._getFrame()
+            self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
+            return True
+        return False
 
     def _slide(self) -> None:
         global _slideSound
+        if not self.bSlideEnabled:
+            return
         if self.bOnGround and self.state == PlayerState.RUNNING and self.slideCooldownTimer <= 0:
             if _slideSound is None:
                 _slideSound = pygame.mixer.Sound(slideSoundPath)
@@ -141,6 +179,9 @@ class Player(AnimatedSprite):
             self._endSlide()
         self._setFrames(self.trappedFrames)
         self.state = PlayerState.TRAPPED
+        self.bDoubleJumpAvailable = False
+        self.coyoteTimer = 0.0
+        self.jumpBufferTimer = 0.0
         self.image = self._getFrame()
         self.rect = self.image.get_rect(centerx=self.rect.centerx, bottom=self.groundY)
 
@@ -150,6 +191,9 @@ class Player(AnimatedSprite):
         self.state = PlayerState.TACKLED
         self.velocity = Vector2(0, 0)
         self.bOnGround = True
+        self.bDoubleJumpAvailable = False
+        self.coyoteTimer = 0.0
+        self.jumpBufferTimer = 0.0
         self.rect.bottom = self.groundY
 
     def getHitbox(self) -> Rect:
@@ -166,6 +210,8 @@ class Player(AnimatedSprite):
         if self.updateAnimation(dt):
             self._updateImage()
 
+        bWasOnGround = self.bOnGround
+
         if self.state == PlayerState.JUMPING:
             self.velocity.y += self.gravity * dt
             self.rect.y += int(self.velocity.y * dt)
@@ -174,12 +220,24 @@ class Player(AnimatedSprite):
                 self.rect.bottom = self.groundY
                 self.velocity.y = 0.0
                 self.bOnGround = True
+                self.bDoubleJumpAvailable = False
                 self.state = PlayerState.RUNNING
 
         elif self.state == PlayerState.SLIDING:
             self.slideTimer -= dt
             if self.slideTimer <= 0:
                 self._endSlide()
+
+        if bWasOnGround and not self.bOnGround and self.state != PlayerState.JUMPING:
+            self.coyoteTimer = self.coyoteTime
+
+        if self.coyoteTimer > 0:
+            self.coyoteTimer -= dt
+        if self.jumpBufferTimer > 0:
+            self.jumpBufferTimer -= dt
+            if self.bOnGround:
+                self._jump()
+                self.jumpBufferTimer = 0.0
 
         if self.slideBoostTimer > 0:
             self.slideBoostTimer -= dt

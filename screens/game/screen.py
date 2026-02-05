@@ -15,13 +15,14 @@ from enum import Enum, auto
 
 import flags
 from keybindings import keyBindings
+from levels import LevelConfig, level1Config
 from settings import GameState, ScreenSize, width, height, obstacleSpawnEvent
 from entities import (
     Player, Chaser, Obstacle, FallingCage, Ceiling,
     TileSet, GroundTilemap, CeilingTileSet, CeilingTilemap
 )
 from entities.obstacle.cage import CageState
-from paths import assetsPath, screensPath
+from paths import assetsPath
 
 from .hud import HUD
 from .spawner import ObstacleSpawner
@@ -40,25 +41,25 @@ class EasterEggMode(Enum):
 class GameScreen:
     baseW: int = 1280
     baseH: int = 720
-    scrollSpeedConst: float = 400.0
     groundRatio: float = 1.0
-    laneDodgeScore: int = 100
     cageDodgeScore: int = 150
 
-    def __init__(self, setStateCallback: Callable[[GameState], None]) -> None:
+    def __init__(self, setStateCallback: Callable[[GameState], None],
+                 levelConfig: LevelConfig = level1Config) -> None:
         self.setState = setStateCallback
+        self.levelConfig = levelConfig
         self.screenSize: ScreenSize = (width, height)
         self.scale = min(width / self.baseW, height / self.baseH)
 
-        Obstacle.clearCache()
+        Obstacle.setDir(levelConfig.obstacleDir)
         self._loadBackground()
 
         self.scrollX: float = 0.0
-        self.scrollSpeed = self.scrollSpeedConst
+        self.scrollSpeed: float = levelConfig.scrollSpeed
         self.groundY = int(height * self.groundRatio)
 
-        self.localPlayer = Player(self._s(320), self.groundY)
-        self.chaser: Chaser | None = None if flags.bDisableChaser else Chaser(self._s(-200), self.groundY)
+        self.localPlayer = self._createPlayer()
+        self.chaser: Chaser | None = self._createChaser()
 
         self.allSprites: Group[pygame.sprite.Sprite] = pygame.sprite.Group()
         self.allSprites.add(self.localPlayer)
@@ -72,10 +73,7 @@ class GameScreen:
         self.score: int = 0
         self.bGameOver: bool = False
         self.hitCount: int = 0
-        self.maxHits: int = 3
         self.slowdownTimer: float = 0.0
-        self.slowdownDuration: float = 0.8
-        self.slowdownMult: float = 0.4
         self.bChaserCatching: bool = False
         self.bPlayerTackled: bool = False
         self.tackleTimer: float = 0.0
@@ -87,28 +85,53 @@ class GameScreen:
         self.trappedDuration: float = 4.0
         self.trappingCage: FallingCage | None = None
 
-        self.finaleScore: int = 3000
         self.bFinaleTriggered: bool = False
         self.bChaserTrapped: bool = False
         self.bLevelComplete: bool = False
         self.finaleCage: FallingCage | None = None
 
-        self._initTilemap()
-        self._initCeilingTilemap()
+        self.tileset: TileSet | None = None
+        self.groundTilemap: GroundTilemap | None = None
+        self.ceilingTileset: CeilingTileSet | None = None
+        self.ceilingTilemap: CeilingTilemap | None = None
+
+        if levelConfig.bHasGroundTiles:
+            self._initTilemap()
+        if levelConfig.bHasCeilingTiles:
+            self._initCeilingTilemap()
 
         self._eeStep: int = 0
         self._eeHeld: set[str] = set()
         self._eeMode: EasterEggMode = EasterEggMode.OFF
 
-        self.hud = HUD(self.screenSize)
-        self.spawner = ObstacleSpawner(self.screenSize, self.groundY, self.scrollSpeed)
+        self.hud = HUD(self.screenSize, bDoubleJump=levelConfig.bDoubleJump,
+                       bSlideEnabled=levelConfig.bSlideEnabled)
+        self.spawner = ObstacleSpawner(
+            self.screenSize, self.groundY, self.scrollSpeed,
+            levelConfig.obstacleMinDelay, levelConfig.obstacleMaxDelay
+        )
         self.gameCollision = GameCollision(self.screenSize)
+
+    def _createPlayer(self) -> Player:
+        cfg = self.levelConfig
+        return Player(
+            self._s(320), self.groundY,
+            gravity=cfg.gravity, jumpForce=cfg.jumpForce,
+            bDoubleJump=cfg.bDoubleJump, doubleJumpForce=cfg.doubleJumpForce,
+            bSlideEnabled=cfg.bSlideEnabled,
+            coyoteTime=cfg.coyoteTime, jumpBuffer=cfg.jumpBuffer
+        )
+
+    def _createChaser(self) -> Chaser | None:
+        if flags.bDisableChaser:
+            return None
+        return Chaser(self._s(-200), self.groundY, framesPath=self.levelConfig.chaserFramesPath)
 
     def _s(self, val: int) -> int:
         return max(1, int(val * self.scale))
 
     def _loadBackground(self) -> None:
-        path = screensPath / "background.png"
+        path = self.levelConfig.backgroundPath
         try:
             original = pygame.image.load(str(path)).convert()
             self.background = pygame.transform.scale(original, self.screenSize)
@@ -150,22 +173,25 @@ class GameScreen:
         if self.chaser:
             self.chaser.setGroundY(self.groundY)
 
-        groundH = newSize[1] - self.groundY
-        self.groundTilemap.on_resize(newSize[0], self.groundY, groundH)
+        if self.groundTilemap:
+            groundH = newSize[1] - self.groundY
+            self.groundTilemap.on_resize(newSize[0], self.groundY, groundH)
         self.ceiling.onResize(newSize[0])
-        self.ceilingTilemap.on_resize(newSize[0], self.ceiling.height)
+        if self.ceilingTilemap:
+            self.ceilingTilemap.on_resize(newSize[0], self.ceiling.height)
 
         self.hud.onResize(newSize)
         self.spawner.onResize(newSize, self.groundY)
         self.gameCollision.onResize(newSize)
 
     def reset(self) -> None:
-        Obstacle.clearCache()
+        cfg = self.levelConfig
+        Obstacle.setDir(cfg.obstacleDir)
         FallingCage.clearCache()
         self.groundY = int(self.screenSize[1] * self.groundRatio)
 
-        self.localPlayer = Player(self._s(320), self.groundY)
-        self.chaser = None if flags.bDisableChaser else Chaser(self._s(-200), self.groundY)
+        self.localPlayer = self._createPlayer()
+        self.chaser = self._createChaser()
 
         self.allSprites.empty()
         self.allSprites.add(self.localPlayer)
@@ -174,9 +200,11 @@ class GameScreen:
 
         self.obstacles.empty()
         self.fallingCages.empty()
-        self._initCeilingTilemap()
+        if cfg.bHasCeilingTiles:
+            self._initCeilingTilemap()
 
         self.scrollX = 0.0
+        self.scrollSpeed = cfg.scrollSpeed
         self.score = 0
         self.bGameOver = False
         self.hitCount = 0
@@ -255,19 +283,29 @@ class GameScreen:
             self._updateChaserCatching(dt)
             return
 
+        cfg = self.levelConfig
+        if cfg.bSpeedGrowth:
+            self.scrollSpeed = min(self.scrollSpeed + cfg.speedGrowth * dt, cfg.maxSpeed)
+            self.spawner.scrollSpeed = self.scrollSpeed
+
         boostMult = 2.2 if self.localPlayer.isBoostActive() else 1.0
-        slowMult = self.slowdownMult if self.slowdownTimer > 0 else 1.0
+        slowMult = cfg.slowdownMult if self.slowdownTimer > 0 else 1.0
         scrollDelta = self.scrollSpeed * dt * boostMult * slowMult
         self.scrollX += scrollDelta
         if self.scrollX >= self.bgWidth:
             self.scrollX -= self.bgWidth
 
-        self.groundTilemap.update(scrollDelta)
-        cageXs = self.ceilingTilemap.update(scrollDelta)
-        if not self.bFinaleTriggered:
-            for cx in cageXs:
-                if self.spawner.canSpawnCage():
-                    self.spawner.spawnCageAt(cx, self.ceiling.height, self.fallingCages)
+        if self.groundTilemap:
+            self.groundTilemap.update(scrollDelta)
+
+        if self.ceilingTilemap and cfg.bFallingCages:
+            cageXs = self.ceilingTilemap.update(scrollDelta)
+            if not self.bFinaleTriggered:
+                for cx in cageXs:
+                    if self.spawner.canSpawnCage():
+                        self.spawner.spawnCageAt(cx, self.ceiling.height, self.fallingCages)
+        elif self.ceilingTilemap:
+            self.ceilingTilemap.update(scrollDelta)
 
         self.score += int(self.scrollSpeed * dt * 0.1 * slowMult)
 
@@ -289,7 +327,7 @@ class GameScreen:
         self._updateFinale(dt)
 
     def _updateFinale(self, dt: float) -> None:
-        if not self.bFinaleTriggered and self.score >= self.finaleScore and self.chaser:
+        if not self.bFinaleTriggered and self.score >= self.levelConfig.finaleScore and self.chaser:
             self.bFinaleTriggered = True
             pygame.time.set_timer(obstacleSpawnEvent, 0)
             cage = FallingCage(int(self.chaser.rect.centerx), self.ceiling.height, self.groundY, 0.0)
@@ -345,12 +383,13 @@ class GameScreen:
             self.localPlayer, self.chaser, self.obstacles, self.fallingCages, bInvincible
         )
 
+        cfg = self.levelConfig
         if result.bHitObstacle:
             self.hitCount += 1
-            self.slowdownTimer = self.slowdownDuration
+            self.slowdownTimer = cfg.slowdownDuration
             if self.chaser:
                 self.chaser.onPlayerHit()
-            if self.hitCount >= self.maxHits and self.chaser and not self.bFinaleTriggered:
+            if self.hitCount >= cfg.maxHits and self.chaser and not self.bFinaleTriggered:
                 self.bChaserCatching = True
                 self.chaser.startCatching(self.localPlayer.rect.centerx)
                 pygame.time.set_timer(obstacleSpawnEvent, 0)
@@ -372,7 +411,7 @@ class GameScreen:
         for obstacle in self.obstacles:
             if not obstacle.bScored and obstacle.rect.right < playerLeft:
                 obstacle.bScored = True
-                self.score += self.laneDodgeScore
+                self.score += self.levelConfig.laneDodgeScore
 
         for cage in self.fallingCages:
             if not cage.bScored and cage.state == CageState.GROUNDED:
@@ -381,7 +420,8 @@ class GameScreen:
 
     def draw(self, screen: Surface) -> None:
         self._drawScrollingBackground(screen)
-        self.groundTilemap.draw(screen)
+        if self.groundTilemap:
+            self.groundTilemap.draw(screen)
         self.obstacles.draw(screen)
 
         if self.bPlayerTackled and self._tackledImage:
@@ -392,14 +432,16 @@ class GameScreen:
 
         if self.chaser:
             screen.blit(self.chaser.image, self.chaser.rect)
-        self.ceilingTilemap.draw(screen)
+        if self.ceilingTilemap:
+            self.ceilingTilemap.draw(screen)
 
         for cage in self.fallingCages:
             cage.draw(screen)
         if self.finaleCage:
             self.finaleCage.draw(screen)
 
-        self.hud.draw(screen, self.score, self.bGameOver, self.hitCount, self.maxHits, self.bLevelComplete)
+        self.hud.draw(screen, self.score, self.bGameOver, self.hitCount,
+                      self.levelConfig.maxHits, self.bLevelComplete)
 
         if self._eeMode == EasterEggMode.MIRROR:
             screen.blit(pygame.transform.flip(screen, True, False), (0, 0))

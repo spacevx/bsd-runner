@@ -24,6 +24,8 @@ def load() -> None:
     import settings
     if "bSoundEnabled" in data:
         settings.bSoundEnabled = data["bSoundEnabled"]
+    if "bLevel2Unlocked" in data:
+        settings.bLevel2Unlocked = data["bLevel2Unlocked"]
 
 
 def save() -> None:
@@ -37,6 +39,7 @@ def save() -> None:
             "restart": keyBindings.restart,
         },
         "bSoundEnabled": settings.bSoundEnabled,
+        "bLevel2Unlocked": settings.bLevel2Unlocked,
     }
     with open(configFile, "w") as f:
         json.dump(data, f, indent=2)

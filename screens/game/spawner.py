@@ -14,16 +14,16 @@ from entities import Obstacle, FallingCage
 class ObstacleSpawner:
     baseW: int = 1920
     baseH: int = 1080
-
-    obstacleMinDelay: float = 2.5
-    obstacleMaxDelay: float = 5.0
     minGapBetweenTypes: float = 2.0
 
-    def __init__(self, screenSize: ScreenSize, groundY: int, scrollSpeed: float) -> None:
+    def __init__(self, screenSize: ScreenSize, groundY: int, scrollSpeed: float,
+                 obstacleMinDelay: float = 2.5, obstacleMaxDelay: float = 5.0) -> None:
         self.screenSize = screenSize
         self.scale = min(screenSize[0] / self.baseW, screenSize[1] / self.baseH)
         self.groundY = groundY
         self.scrollSpeed = scrollSpeed
+        self.obstacleMinDelay: float = obstacleMinDelay
+        self.obstacleMaxDelay: float = obstacleMaxDelay
         self.obstacleSpawnDelay: float = 3.0
         self.lastBodyTime: float = 0.0
         self.lastCageTime: float = 0.0

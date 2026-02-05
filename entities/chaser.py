@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from pathlib import Path
 
 from pygame import Rect
 from pygame.sprite import Group
@@ -38,9 +39,10 @@ class Chaser(AnimatedSprite):
     jumpScaleMult: float = 1.5
     catchingSpeed: float = 600.0
 
-    def __init__(self, x: int, groundY: int) -> None:
+    def __init__(self, x: int, groundY: int, framesPath: Path | None = None) -> None:
         targetHeight = getRunningHeight(self.playerScale)
-        runningFrames = loadFrames(chaserRunningFramesPath, targetHeight=targetHeight)
+        path = framesPath if framesPath else chaserRunningFramesPath
+        runningFrames = loadFrames(path, targetHeight=targetHeight)
         runningHeight = runningFrames[0].surface.get_height()
         jumpingTargetHeight = int(runningHeight * self.jumpScaleMult)
         jumpingFrames = loadFrames(chaserJumpingFramesPath, targetHeight=jumpingTargetHeight)

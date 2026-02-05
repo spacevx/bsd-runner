@@ -1,0 +1,95 @@
+from dataclasses import dataclass
+from pathlib import Path
+
+from paths import assetsPath, screensPath
+
+
+@dataclass(frozen=True)
+class LevelConfig:
+    levelId: int
+    name: str
+    gravity: float
+    jumpForce: float
+    bDoubleJump: bool
+    doubleJumpForce: float
+    bSlideEnabled: bool
+    coyoteTime: float
+    jumpBuffer: float
+    scrollSpeed: float
+    bSpeedGrowth: bool
+    speedGrowth: float
+    maxSpeed: float
+    obstacleMinDelay: float
+    obstacleMaxDelay: float
+    bFallingCages: bool
+    finaleScore: int
+    laneDodgeScore: int
+    maxHits: int
+    slowdownDuration: float
+    slowdownMult: float
+    obstacleDir: Path
+    backgroundPath: Path
+    chaserFramesPath: Path
+    bHasCeilingTiles: bool
+    bHasGroundTiles: bool
+
+
+level1Config = LevelConfig(
+    levelId=1,
+    name="NIVEAU 1",
+    gravity=1100.0,
+    jumpForce=-650.0,
+    bDoubleJump=False,
+    doubleJumpForce=0.0,
+    bSlideEnabled=True,
+    coyoteTime=0.0,
+    jumpBuffer=0.0,
+    scrollSpeed=400.0,
+    bSpeedGrowth=False,
+    speedGrowth=0.0,
+    maxSpeed=400.0,
+    obstacleMinDelay=2.5,
+    obstacleMaxDelay=5.0,
+    bFallingCages=True,
+    finaleScore=3000,
+    laneDodgeScore=100,
+    maxHits=3,
+    slowdownDuration=0.8,
+    slowdownMult=0.4,
+    obstacleDir=assetsPath / "lanes",
+    backgroundPath=screensPath / "background.png",
+    chaserFramesPath=assetsPath / "chaser" / "running" / "frames",
+    bHasCeilingTiles=True,
+    bHasGroundTiles=True,
+)
+
+level2Config = LevelConfig(
+    levelId=2,
+    name="NIVEAU 2",
+    gravity=2200.0,
+    jumpForce=-860.0,
+    bDoubleJump=True,
+    doubleJumpForce=-780.0,
+    bSlideEnabled=False,
+    coyoteTime=0.09,
+    jumpBuffer=0.11,
+    scrollSpeed=420.0,
+    bSpeedGrowth=True,
+    speedGrowth=6.0,
+    maxSpeed=900.0,
+    obstacleMinDelay=0.7,
+    obstacleMaxDelay=1.7,
+    bFallingCages=False,
+    finaleScore=5000,
+    laneDodgeScore=100,
+    maxHits=3,
+    slowdownDuration=1.15,
+    slowdownMult=0.68,
+    obstacleDir=assetsPath / "lanes",
+    backgroundPath=assetsPath / "level2" / "background.png",
+    chaserFramesPath=assetsPath / "chaser" / "running" / "frames",
+    bHasCeilingTiles=False,
+    bHasGroundTiles=True,
+)
+
+levelConfigs: dict[int, LevelConfig] = {1: level1Config, 2: level2Config}

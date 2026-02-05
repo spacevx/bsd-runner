@@ -10,8 +10,10 @@ from settings import (
 )
 from screens import MainMenu, GameScreen, OptionsScreen
 from discord import DiscordRPC
+from levels import level1Config, level2Config, levelConfigs
 from paths import assetsPath
 import config
+import settings
 
 
 class Game:
@@ -30,9 +32,10 @@ class Game:
         self.windowedSize: ScreenSize = (width, height)
         self.bRunning: bool = True
         self.state: GameState = GameState.MENU
+        self.currentLevel: int = 1
 
-        self.menu: MainMenu = MainMenu(self.setState)
-        self.gameScreen: GameScreen = GameScreen(self.setState)
+        self.menu: MainMenu = MainMenu(self.setState, self.startLevel)
+        self.gameScreen: GameScreen = GameScreen(self.setState, level1Config)
         self.optionsScreen: OptionsScreen = OptionsScreen((width, height), self.setState)
 
         self.discordRpc: DiscordRPC = DiscordRPC()
@@ -41,6 +44,13 @@ class Game:
 
         from entities.input.manager import InputManager
         self.inputManager: InputManager = InputManager()
+
+    def startLevel(self, levelId: int) -> None:
+        self.currentLevel = levelId
+        cfg = levelConfigs.get(levelId, level1Config)
+        self.gameScreen = GameScreen(self.setState, cfg)
+        self.gameScreen.onResize(self.screenSize)
+        self.setState(GameState.GAME)
 
     def setState(self, newState: GameState) -> None:
         if newState == GameState.GAME and self.state != GameState.GAME:
@@ -126,6 +136,9 @@ class Game:
             self.menu.update(dt)
         elif self.state == GameState.GAME:
             self.gameScreen.update(dt)
+            if self.gameScreen.bLevelComplete and self.currentLevel == 1 and not settings.bLevel2Unlocked:
+                settings.bLevel2Unlocked = True
+                config.save()
         elif self.state == GameState.OPTIONS:
             self.optionsScreen.update(dt)
 

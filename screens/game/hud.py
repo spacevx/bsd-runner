@@ -5,7 +5,7 @@ from pygame.font import Font
 from keybindings import keyBindings
 from settings import ScreenSize, white, gold
 from strings import (
-    gameOver, gameRestartKey, gameRestartButton, hudJump, hudSlide,
+    gameOver, gameRestartKey, gameRestartButton, hudJump, hudSlide, hudDoubleJump,
     levelComplete, levelCompleteRestart, gameOverMenuKey, gameOverMenuButton
 )
 from screens.ui import _gradientRect
@@ -15,8 +15,11 @@ class HUD:
     baseW: int = 1920
     baseH: int = 1080
 
-    def __init__(self, screenSize: ScreenSize) -> None:
+    def __init__(self, screenSize: ScreenSize, bDoubleJump: bool = False,
+                 bSlideEnabled: bool = True) -> None:
         self.screenSize = screenSize
+        self.bDoubleJump = bDoubleJump
+        self.bSlideEnabled = bSlideEnabled
         self.scale = min(screenSize[0] / self.baseW, screenSize[1] / self.baseH)
         self._createFonts()
 
@@ -171,6 +174,25 @@ class HUD:
         textColor = (240, 240, 245)
 
         jumpIcon = keyBindings.getKeyIcon(keyBindings.jump, iconSize)
+
+        if self.bDoubleJump and not self.bSlideEnabled:
+            jumpLabel = self.smallFont.render(hudDoubleJump, True, textColor)
+            totalW = iconSize + self._s(8) + jumpLabel.get_width()
+            boxH = iconSize + self._s(10)
+            bgSurf = self._glassPanel(totalW + self._s(20), boxH)
+            x = self._s(10)
+            centerY = boxH // 2
+            if jumpIcon:
+                bgSurf.blit(jumpIcon, (x, centerY - iconSize // 2))
+                x += iconSize + self._s(8)
+            else:
+                fallback = self.smallFont.render(keyBindings.getKeyName(keyBindings.jump), True, textColor)
+                bgSurf.blit(fallback, (x, centerY - fallback.get_height() // 2))
+                x += fallback.get_width() + self._s(8)
+            bgSurf.blit(jumpLabel, (x, centerY - jumpLabel.get_height() // 2))
+            self._controlsSurf = bgSurf
+            return
+
         slideIcon = keyBindings.getKeyIcon(keyBindings.slide, iconSize)
 
         jumpLabel = self.smallFont.render(hudJump, True, textColor)
@@ -222,6 +244,26 @@ class HUD:
         textColor = (240, 240, 245)
 
         jumpBtn = jb.getButtonForAction(GameAction.JUMP)
+
+        if self.bDoubleJump and not self.bSlideEnabled:
+            jumpLabel = self.smallFont.render(hudDoubleJump, True, textColor)
+            totalW = iconSize + self._s(8) + jumpLabel.get_width()
+            boxH = iconSize + self._s(10)
+            bgSurf = self._glassPanel(totalW + self._s(20), boxH)
+            x = self._s(10)
+            centerY = boxH // 2
+            if jumpBtn is not None:
+                jumpIcon = self.joyIcons.renderButtonIcon(jumpBtn, (iconSize, iconSize))
+                bgSurf.blit(jumpIcon, (x, centerY - iconSize // 2))
+                x += iconSize + self._s(8)
+            else:
+                fallback = self.smallFont.render("?", True, textColor)
+                bgSurf.blit(fallback, (x, centerY - fallback.get_height() // 2))
+                x += fallback.get_width() + self._s(8)
+            bgSurf.blit(jumpLabel, (x, centerY - jumpLabel.get_height() // 2))
+            self._controlsSurf = bgSurf
+            return
+
         slideBtn = jb.getButtonForAction(GameAction.SLIDE)
 
         jumpLabel = self.smallFont.render(hudJump, True, textColor)

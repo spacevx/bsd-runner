@@ -2,7 +2,9 @@ from typing import Final
 
 windowTitle: Final[str] = "BSD Runner"
 menuTitle: Final[str] = "BSD Runner"
-btnStart: Final[str] = "COMMENCER LE JEU"
+btnLevel1: Final[str] = "NIVEAU 1"
+btnLevel2: Final[str] = "NIVEAU 2"
+btnLevel2Locked: Final[str] = "NIVEAU 2 🔒"
 btnOptions: Final[str] = "OPTIONS"
 btnQuit: Final[str] = "QUITTER"
 gameTitle: Final[str] = "JEU"
@@ -26,6 +28,7 @@ optionsPressButton: Final[str] = "APPUYEZ SUR UN BOUTON..."
 
 hudJump: Final[str] = "Sauter"
 hudSlide: Final[str] = "Glisser"
+hudDoubleJump: Final[str] = "Double Saut"
 instructionEsc: Final[str] = "Appuyez sur ÉCHAP pour revenir au menu"
 
 gameOver: Final[str] = "ATTRAPÉ!"
