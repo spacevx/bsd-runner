@@ -121,7 +121,7 @@ class FallingCage(BaseObstacle):
         self.rect.bottom = self.groundY
         self.chainRect.centerx = self.rect.centerx
 
-    def getHixbox(self) -> Rect:
+    def getHitbox(self) -> Rect:
         return self.rect.inflate(-30, -20)
 
     def update(self, dt: float, playerX: int | None = None) -> None:

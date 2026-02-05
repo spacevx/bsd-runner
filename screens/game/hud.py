@@ -4,7 +4,7 @@ from pygame.font import Font
 
 from keybindings import keyBindings
 from settings import ScreenSize, white, gold
-from strings import gameOver, gameRestart, hudJump, hudSlide
+from strings import gameOver, gameRestartKey, gameRestartButton, hudJump, hudSlide
 
 
 class HUD:
@@ -15,6 +15,11 @@ class HUD:
         self.screenSize = screenSize
         self.scale = min(screenSize[0] / self.baseW, screenSize[1] / self.baseH)
         self._createFonts()
+
+        from entities.input.manager import InputManager
+        from entities.input.joyicons import JoyIcons
+        self.inputManager = InputManager()
+        self.joyIcons = JoyIcons()
 
     def _s(self, val: int) -> int:
         return max(1, int(val * self.scale))
@@ -51,6 +56,14 @@ class HUD:
         self._drawTextWithShadow(screen, scoreText, self.scoreFont, white, (scoreX, scoreY), self._s(3))
 
     def drawControls(self, screen: Surface) -> None:
+        from entities.input.manager import InputSource
+        from entities.input.joybindings import JoyBindings
+        from entities.input.manager import GameAction
+
+        if self.inputManager.lastInputSource == InputSource.JOYSTICK:
+            self._drawJoystickHints(screen)
+            return
+
         iconSize = self._s(36)
         ctrlX = self._s(30)
         ctrlY = self.screenSize[1] - self._s(55)
@@ -98,6 +111,60 @@ class HUD:
 
         screen.blit(slideLabel, (x, centerY - slideLabel.get_height() // 2))
 
+    def _drawJoystickHints(self, screen: Surface) -> None:
+        from entities.input.joybindings import JoyBindings
+        from entities.input.manager import GameAction
+
+        jb = JoyBindings()
+        iconSize = self._s(36)
+        ctrlX = self._s(30)
+        ctrlY = self.screenSize[1] - self._s(55)
+
+        jumpBtn = jb.getButtonForAction(GameAction.JUMP)
+        slideBtn = jb.getButtonForAction(GameAction.SLIDE)
+
+        jumpLabel = self.smallFont.render(hudJump, True, white)
+        slideLabel = self.smallFont.render(hudSlide, True, white)
+        separator = self.smallFont.render("|", True, (150, 150, 150))
+
+        totalW = iconSize + self._s(8) + jumpLabel.get_width() + self._s(20)
+        totalW += separator.get_width() + self._s(20)
+        totalW += iconSize + self._s(8) + slideLabel.get_width()
+        boxH = iconSize + self._s(10)
+
+        bgSurf = pygame.Surface((totalW + self._s(20), boxH), pygame.SRCALPHA)
+        pygame.draw.rect(bgSurf, (0, 0, 0, 100), bgSurf.get_rect(), border_radius=self._s(5))
+        screen.blit(bgSurf, (ctrlX - self._s(10), ctrlY - self._s(5)))
+
+        x = ctrlX
+        centerY = ctrlY + boxH // 2 - self._s(5)
+
+        if jumpBtn is not None:
+            jumpIcon = self.joyIcons.renderButtonIcon(jumpBtn, (iconSize, iconSize))
+            screen.blit(jumpIcon, (x, centerY - iconSize // 2))
+            x += iconSize + self._s(8)
+        else:
+            fallback = self.smallFont.render("?", True, white)
+            screen.blit(fallback, (x, centerY - fallback.get_height() // 2))
+            x += fallback.get_width() + self._s(8)
+
+        screen.blit(jumpLabel, (x, centerY - jumpLabel.get_height() // 2))
+        x += jumpLabel.get_width() + self._s(20)
+
+        screen.blit(separator, (x, centerY - separator.get_height() // 2))
+        x += separator.get_width() + self._s(20)
+
+        if slideBtn is not None:
+            slideIcon = self.joyIcons.renderButtonIcon(slideBtn, (iconSize, iconSize))
+            screen.blit(slideIcon, (x, centerY - iconSize // 2))
+            x += iconSize + self._s(8)
+        else:
+            fallback = self.smallFont.render("?", True, white)
+            screen.blit(fallback, (x, centerY - fallback.get_height() // 2))
+            x += fallback.get_width() + self._s(8)
+
+        screen.blit(slideLabel, (x, centerY - slideLabel.get_height() // 2))
+
     def drawGameOver(self, screen: Surface, score: int) -> None:
         w, h = self.screenSize
         overlay = pygame.Surface((w, h), pygame.SRCALPHA)
@@ -133,7 +200,20 @@ class HUD:
         screen.blit(scoreShadow, scoreSurf.get_rect(center=(cx + self._s(2), cy + self._s(12))))
         screen.blit(scoreSurf, scoreRect)
 
-        restartSurf = self.smallFont.render(gameRestart, True, white)
+        from entities.input.manager import InputSource, GameAction
+        from entities.input.joybindings import JoyBindings
+
+        if self.inputManager.lastInputSource == InputSource.JOYSTICK:
+            restartBtn = JoyBindings().getButtonForAction(GameAction.RESTART)
+            if restartBtn is not None:
+                btnName = self.joyIcons.getButtonName(restartBtn)
+                restartText = gameRestartButton.format(button=btnName)
+            else:
+                restartText = gameRestartKey
+        else:
+            restartText = gameRestartKey
+
+        restartSurf = self.smallFont.render(restartText, True, white)
         restartRect = restartSurf.get_rect(center=(cx, cy + self._s(90)))
         screen.blit(restartSurf, restartRect)
 

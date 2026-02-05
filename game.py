@@ -34,6 +34,9 @@ class Game:
         self.rpcUpdateTimer: float = 0.0
         self.rpcUpdateInterval: float = 5.0
 
+        from entities.input.manager import InputManager
+        self.inputManager: InputManager = InputManager()
+
     def setState(self, newState: GameState) -> None:
         if newState == GameState.GAME and self.state != GameState.GAME:
             self.gameScreen.reset()
@@ -78,6 +81,15 @@ class Game:
 
     def handleEvents(self) -> None:
         for event in pygame.event.get():
+            if event.type == pygame.JOYDEVICEADDED:
+                self.inputManager.handleJoyDeviceAdded(event)
+                continue
+            elif event.type == pygame.JOYDEVICEREMOVED:
+                self.inputManager.handleJoyDeviceRemoved(event)
+                continue
+
+            inputEvent = self.inputManager.processEvent(event)
+
             if event.type == pygame.QUIT:
                 self.bRunning = False
 
@@ -91,15 +103,15 @@ class Game:
                     self._toggleFullscreen()
 
             if self.state == GameState.MENU:
-                self.menu.handleEvent(event)
+                self.menu.handleEvent(event, inputEvent)
 
             elif self.state == GameState.GAME:
-                self.gameScreen.handleEvent(event)
+                self.gameScreen.handleEvent(event, inputEvent)
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and not self.bFullscreen:
                     self.setState(GameState.MENU)
 
             elif self.state == GameState.OPTIONS:
-                self.optionsScreen.handleEvent(event)
+                self.optionsScreen.handleEvent(event, inputEvent)
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and not self.bFullscreen:
                     self.setState(GameState.MENU)
 

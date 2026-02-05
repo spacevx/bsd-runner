@@ -35,3 +35,8 @@ class GameState(Enum):
 
 
 obstacleSpawnEvent: Final[int] = pygame.USEREVENT + 1
+
+JOY_DEADZONE: Final[float] = 0.3
+JOY_AXIS_THRESHOLD: Final[float] = 0.5
+DEFAULT_JOY_JUMP: Final[int] = 0
+DEFAULT_JOY_SLIDE: Final[int] = 1

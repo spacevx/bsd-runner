@@ -128,8 +128,41 @@ class MainMenu:
         self.spotlightFlicker: float = 1.0
         self.titlePulse: float = 0.0
 
+        self.focusedButtonIndex: int = 0
+        self.buttons: list = []
+        self.bJoystickNavMode: bool = False
+        self._updateButtonsList()
+
     def _s(self, val: int) -> int:
         return max(1, int(val * self.scale))
+
+    def _updateButtonsList(self) -> None:
+        self.buttons = [self.startBtn, self.optionsBtn, self.quitBtn]
+
+    def _navigateMenu(self, direction: int) -> None:
+        self.focusedButtonIndex = (self.focusedButtonIndex + direction) % len(self.buttons)
+        self._updateButtonFocus()
+
+    def _updateButtonFocus(self) -> None:
+        if not self.bJoystickNavMode:
+            return
+        if not self.bBrowser and self.manager:
+            for i, btn in enumerate(self.buttons):
+                if btn and i == self.focusedButtonIndex:
+                    pass
+                else:
+                    pass
+
+    def _activateFocusedButton(self) -> None:
+        if not self.bJoystickNavMode or not self.buttons:
+            return
+        focusedBtn = self.buttons[self.focusedButtonIndex]
+        if focusedBtn == self.startBtn:
+            self.setState(GameState.GAME)
+        elif focusedBtn == self.optionsBtn:
+            self.setState(GameState.OPTIONS)
+        elif focusedBtn == self.quitBtn:
+            self.setState(GameState.QUIT)
 
     def _setupTheme(self) -> None:
         bw, bh = self._s(400), self._s(70)
@@ -176,6 +209,7 @@ class MainMenu:
         self.startBtn = _SimpleButton(rects[0], "COMMENCER LE JEU", self.buttonFont)
         self.optionsBtn = _SimpleButton(rects[1], "OPTIONS", self.buttonFont)
         self.quitBtn = _SimpleButton(rects[2], "QUITTER", self.buttonFont)
+        self._updateButtonsList()
 
     def _createButtons(self) -> None:
         rects = self._getButtonRects()
@@ -191,6 +225,7 @@ class MainMenu:
             relative_rect=rects[2], text="QUITTER",
             manager=self.manager, object_id=ObjectID(object_id="#quit_btn")
         )
+        self._updateButtonsList()
 
     def _updateButtonPositions(self) -> None:
         rects = self._getButtonRects()
@@ -388,7 +423,25 @@ class MainMenu:
         self._updateButtonPositions()
         self.titleFont = pygame.font.Font(None, self._s(160))
 
-    def handleEvent(self, event: Event) -> None:
+    def handleEvent(self, event: Event, inputEvent: "InputEvent | None" = None) -> None:
+        from entities.input.manager import InputEvent, GameAction, InputSource
+
+        if event.type == pygame.MOUSEMOTION:
+            self.bJoystickNavMode = False
+
+        if inputEvent:
+            if inputEvent.source == InputSource.JOYSTICK:
+                self.bJoystickNavMode = True
+
+            if inputEvent.action == GameAction.MENU_DOWN and inputEvent.bPressed:
+                self._navigateMenu(1)
+            elif inputEvent.action == GameAction.MENU_UP and inputEvent.bPressed:
+                self._navigateMenu(-1)
+            elif inputEvent.action in (GameAction.MENU_CONFIRM, GameAction.JUMP) and inputEvent.bPressed:
+                self._activateFocusedButton()
+            elif inputEvent.action in (GameAction.MENU_BACK, GameAction.SLIDE) and inputEvent.bPressed:
+                self.setState(GameState.MENU)
+
         if self.bBrowser:
             if self.startBtn and self.startBtn.handleEvent(event):
                 self.setState(GameState.GAME)

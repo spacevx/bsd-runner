@@ -164,12 +164,21 @@ class GameScreen:
 
         self.spawner.reset()
 
-    def handleEvent(self, event: Event) -> None:
+    def handleEvent(self, event: Event, inputEvent: "InputEvent | None" = None) -> None:
+        from entities.input.manager import InputEvent, GameAction
+
+        if inputEvent:
+            if inputEvent.action == GameAction.RESTART and inputEvent.bPressed and self.bGameOver:
+                self.reset()
+                return
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r and self.bGameOver:
                 self.reset()
             elif not self.bGameOver:
-                self.localPlayer.handleInput(event)
+                self.localPlayer.handleInput(event, inputEvent)
+        elif inputEvent and not self.bGameOver:
+            self.localPlayer.handleInput(event, inputEvent)
 
         self.spawner.handleEvent(event, self.obstacles, self.bGameOver)
 

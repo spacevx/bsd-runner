@@ -131,7 +131,7 @@ class Obstacle(BaseObstacle):
 
         return surface
 
-    def getHixbox(self) -> Rect:
+    def getHitbox(self) -> Rect:
         shrinkX = int(self.rect.width * 0.15)
         shrinkY = int(self.rect.height * 0.1)
         return self.rect.inflate(-shrinkX, -shrinkY)

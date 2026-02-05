@@ -11,7 +11,9 @@ from settings import GameState, ScreenSize
 from keybindings import keyBindings
 from strings import (
     optionsTitle, optionsControls, optionsJump, optionsSlide,
-    optionsReset, optionsBack, optionsPressKey
+    optionsReset, optionsBack, optionsPressKey,
+    optionsController, optionsJoyJump, optionsJoySlide,
+    optionsJoyReset, optionsNoController, optionsPressButton
 )
 
 _BROWSER: bool = sys.platform == "emscripten"
@@ -133,6 +135,14 @@ class OptionsScreen:
         self.bListeningJump: bool = False
         self.bListeningSlide: bool = False
 
+        self.controllerLabel: _SimpleButton | None = None
+        self.joyJumpBtn: _SimpleButton | None = None
+        self.joySlideBtn: _SimpleButton | None = None
+        self.joyResetBtn: Any = None
+        self.bWaitingForJoyInput: bool = False
+        self.pendingJoyAction: Any = None
+        self._createJoystickButtons()
+
     def _s(self, val: int) -> int:
         return max(1, int(val * self.scale))
 
@@ -217,6 +227,71 @@ class OptionsScreen:
                 manager=self.manager, object_id=ObjectID(object_id="#back_btn")
             )
 
+    def _createJoystickButtons(self) -> None:
+        from entities.input.manager import InputManager, GameAction
+        from entities.input.joybindings import JoyBindings
+        from entities.input.joyicons import JoyIcons
+
+        w, h = self.screenSize
+        cx = w // 2
+        baseY = int(h * 0.45)
+        gap = self._s(80)
+        labelX = cx - self._s(200)
+        btnX = cx + self._s(50)
+        btnW, btnH = self._s(200), self._s(60)
+
+        joyBaseY = baseY + gap * 3
+
+        self.controllerLabel = _SimpleButton(
+            pygame.Rect(labelX, joyBaseY - gap, btnW, btnH // 2),
+            self._getControllerStatusText(),
+            pygame.font.Font(None, self._s(24)),
+            normalBg=(30, 30, 35), hoverBg=(30, 30, 35), activeBg=(30, 30, 35),
+            borderColor=(80, 80, 90), borderWidth=2
+        )
+
+        self.joyJumpBtn = _SimpleButton(
+            pygame.Rect(btnX, joyBaseY, btnW, btnH),
+            self._getJoyBindingText(GameAction.JUMP),
+            self.buttonFont,
+            normalBg=(42, 42, 53), hoverBg=(58, 58, 69), activeBg=(74, 74, 85),
+            borderColor=(255, 215, 0)
+        )
+
+        self.joySlideBtn = _SimpleButton(
+            pygame.Rect(btnX, joyBaseY + gap, btnW, btnH),
+            self._getJoyBindingText(GameAction.SLIDE),
+            self.buttonFont,
+            normalBg=(42, 42, 53), hoverBg=(58, 58, 69), activeBg=(74, 74, 85),
+            borderColor=(255, 215, 0)
+        )
+
+        joyResetRect = pygame.Rect(btnX, joyBaseY + gap * 2, btnW, btnH)
+        if self.bBrowser:
+            self.joyResetBtn = _SimpleButton(joyResetRect, optionsJoyReset, self.buttonFont)
+        else:
+            self.joyResetBtn = UIButton(
+                relative_rect=joyResetRect, text=optionsJoyReset,
+                manager=self.manager, object_id=ObjectID(object_id="#joy_reset_btn")
+            )
+
+    def _getControllerStatusText(self) -> str:
+        from entities.input.manager import InputManager
+        im = InputManager()
+        if im.bJoystickConnected:
+            return f"{optionsController}: {im.getJoystickName()}"
+        return optionsNoController
+
+    def _getJoyBindingText(self, action: "GameAction") -> str:
+        from entities.input.joybindings import JoyBindings
+        from entities.input.joyicons import JoyIcons
+
+        binding = JoyBindings().getBinding(action)
+        if binding and binding.button is not None:
+            name = JoyIcons().getButtonName(binding.button)
+            return f"{action.name}: {name}"
+        return f"{action.name}: Not Set"
+
     def _updateKeyButtons(self) -> None:
         if self.bListeningJump:
             self.jumpBtn.setText(optionsPressKey)
@@ -227,6 +302,22 @@ class OptionsScreen:
             self.slideBtn.setText(optionsPressKey)
         else:
             self.slideBtn.setText(keyBindings.getKeyName(keyBindings.slide))
+
+    def _updateJoyButtons(self) -> None:
+        from entities.input.manager import GameAction
+
+        if self.controllerLabel:
+            self.controllerLabel.setText(self._getControllerStatusText())
+        if self.joyJumpBtn:
+            if self.bWaitingForJoyInput and self.pendingJoyAction == GameAction.JUMP:
+                self.joyJumpBtn.setText(optionsPressButton)
+            else:
+                self.joyJumpBtn.setText(self._getJoyBindingText(GameAction.JUMP))
+        if self.joySlideBtn:
+            if self.bWaitingForJoyInput and self.pendingJoyAction == GameAction.SLIDE:
+                self.joySlideBtn.setText(optionsPressButton)
+            else:
+                self.joySlideBtn.setText(self._getJoyBindingText(GameAction.SLIDE))
 
     def _updateButtonPositions(self) -> None:
         jumpRect, slideRect = self._getKeyButtonRects()
@@ -332,6 +423,19 @@ class OptionsScreen:
         slideLabelRect = slideLabelSurf.get_rect(midright=(labelX, baseY + gap + self._s(30)))
         surf.blit(slideLabelSurf, slideLabelRect)
 
+        joyBaseY = baseY + gap * 3
+        joySectionSurf = self.sectionFont.render(optionsController, True, (200, 200, 255))
+        joySectionRect = joySectionSurf.get_rect(midleft=(labelX - self._s(80), joyBaseY - gap + self._s(15)))
+        surf.blit(joySectionSurf, joySectionRect)
+
+        joyJumpLabelSurf = self.labelFont.render(optionsJoyJump, True, (255, 255, 255))
+        joyJumpLabelRect = joyJumpLabelSurf.get_rect(midright=(labelX, joyBaseY + self._s(30)))
+        surf.blit(joyJumpLabelSurf, joyJumpLabelRect)
+
+        joySlideLabelSurf = self.labelFont.render(optionsJoySlide, True, (255, 255, 255))
+        joySlideLabelRect = joySlideLabelSurf.get_rect(midright=(labelX, joyBaseY + gap + self._s(30)))
+        surf.blit(joySlideLabelSurf, joySlideLabelRect)
+
     def onResize(self, newSize: ScreenSize) -> None:
         self.screenSize = newSize
         self.scale = min(newSize[0] / self.baseW, newSize[1] / self.baseH)
@@ -356,7 +460,19 @@ class OptionsScreen:
         self.titleFont = pygame.font.Font(None, self._s(120))
         self.sectionFont = pygame.font.Font(None, self._s(48))
 
-    def handleEvent(self, event: Event) -> None:
+    def handleEvent(self, event: Event, inputEvent: "InputEvent | None" = None) -> None:
+        from entities.input.manager import InputEvent, GameAction
+        from entities.input.joybindings import JoyBindings, JoyBinding
+
+        if self.bWaitingForJoyInput and event.type == pygame.JOYBUTTONDOWN:
+            if self.pendingJoyAction:
+                JoyBindings().setBinding(self.pendingJoyAction, JoyBinding(button=event.button))
+                JoyBindings().saveConfig()
+            self.bWaitingForJoyInput = False
+            self.pendingJoyAction = None
+            self._updateJoyButtons()
+            return
+
         if self.bListeningJump or self.bListeningSlide:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -382,12 +498,28 @@ class OptionsScreen:
             self._updateKeyButtons()
             return
 
+        if self.joyJumpBtn and self.joyJumpBtn.handleEvent(event):
+            self.bWaitingForJoyInput = True
+            self.pendingJoyAction = GameAction.JUMP
+            self._updateJoyButtons()
+            return
+
+        if self.joySlideBtn and self.joySlideBtn.handleEvent(event):
+            self.bWaitingForJoyInput = True
+            self.pendingJoyAction = GameAction.SLIDE
+            self._updateJoyButtons()
+            return
+
         if self.bBrowser:
             if self.resetBtn.handleEvent(event):
                 keyBindings.reset()
                 self._updateKeyButtons()
             elif self.backBtn.handleEvent(event):
                 self.setState(GameState.MENU)
+            elif self.joyResetBtn and self.joyResetBtn.handleEvent(event):
+                JoyBindings().resetToDefaults()
+                JoyBindings().saveConfig()
+                self._updateJoyButtons()
         else:
             self.manager.process_events(event)
             if pygame_gui and event.type == pygame_gui.UI_BUTTON_PRESSED:
@@ -396,10 +528,17 @@ class OptionsScreen:
                     self._updateKeyButtons()
                 elif event.ui_element == self.backBtn:
                     self.setState(GameState.MENU)
+                elif event.ui_element == self.joyResetBtn:
+                    JoyBindings().resetToDefaults()
+                    JoyBindings().saveConfig()
+                    self._updateJoyButtons()
 
     def update(self, dt: float) -> None:
         self.time += dt
         self.titlePulse += dt * 3
+
+        if self.controllerLabel:
+            self.controllerLabel.setText(self._getControllerStatusText())
 
         if not self.bBrowser:
             self.manager.update(dt)
@@ -416,8 +555,17 @@ class OptionsScreen:
         self.jumpBtn.draw(screen)
         self.slideBtn.draw(screen)
 
+        if self.controllerLabel:
+            self.controllerLabel.draw(screen)
+        if self.joyJumpBtn:
+            self.joyJumpBtn.draw(screen)
+        if self.joySlideBtn:
+            self.joySlideBtn.draw(screen)
+
         if self.bBrowser:
             self.resetBtn.draw(screen)
             self.backBtn.draw(screen)
+            if self.joyResetBtn:
+                self.joyResetBtn.draw(screen)
         else:
             self.manager.draw_ui(screen)

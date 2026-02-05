@@ -8,6 +8,7 @@ from entities.animation import AnimatedSprite, AnimationFrame, loadFrames
 from keybindings import keyBindings
 from paths import assetsPath
 
+# Assets path for frames (running / sliding / trapped)
 runningFramesPath = assetsPath / "player" / "running" / "frames"
 slidingFramesPath = assetsPath / "player" / "sliding" / "frames"
 trappedFramesPath = assetsPath / "player" / "trapped"
@@ -70,7 +71,15 @@ class Player(AnimatedSprite):
         if self.bOnGround:
             self.rect.bottom = groundY
 
-    def handleInput(self, event: pygame.event.Event) -> None:
+    def handleInput(self, event: pygame.event.Event, inputEvent: "InputEvent | None" = None) -> None:
+        from entities.input.manager import GameAction, InputEvent
+
+        if inputEvent:
+            if inputEvent.action == GameAction.JUMP and inputEvent.bPressed:
+                self._jump()
+            elif inputEvent.action == GameAction.SLIDE and inputEvent.bPressed:
+                self._slide()
+
         if event.type == pygame.KEYDOWN:
             if event.key == keyBindings.jump:
                 self._jump()
@@ -111,6 +120,7 @@ class Player(AnimatedSprite):
         self.state = PlayerState.TRAPPED
         self.image = self._getFrame()
         self.rect = self.image.get_rect(centerx=self.rect.centerx, bottom=self.groundY)
+
 
     def tackle(self) -> None:
         if self.state == PlayerState.SLIDING:
