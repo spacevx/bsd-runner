@@ -15,7 +15,7 @@ _PYPRESENCE_AVAILABLE: bool = False
 
 if not _BROWSER_ENV:
     try:
-        from pypresence import AioPresence as _AioPresence, DiscordNotFound as _DiscordNotFound, PipeClosed as _PipeClosed  # type: ignore[import-not-found]
+        from pypresence import AioPresence as _AioPresence, DiscordNotFound as _DiscordNotFound, PipeClosed as _PipeClosed  # type: ignore[import-not-found, attr-defined]
         AioPresence = _AioPresence
         DiscordNotFound = _DiscordNotFound
         PipeClosed = _PipeClosed
