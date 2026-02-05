@@ -1,3 +1,5 @@
+# Not made by us, taken from a gist
+
 from PIL import Image, ImageSequence
 from collections import deque
 import sys

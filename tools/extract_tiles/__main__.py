@@ -1,3 +1,6 @@
+# Allow us to convert the ground & ceilling from the background images into tiles
+# Which allow us to do things like cages
+
 from pathlib import Path
 import sys
 import pygame
