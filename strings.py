@@ -33,6 +33,9 @@ gameRestartButton: Final[str] = "Appuyez sur {button} pour recommencer"
 levelComplete: Final[str] = "NIVEAU TERMINÉ!"
 levelCompleteRestart: Final[str] = "Appuyez sur R pour recommencer"
 
+gameOverMenuKey: Final[str] = "Appuyez sur ÉCHAP pour le menu"
+gameOverMenuButton: Final[str] = "Appuyez sur {button} pour le menu"
+
 rpcGameName: Final[str] = "BSD Runner"
 rpcInMenu: Final[str] = "Dans le menu principal"
 rpcPlaying: Final[str] = "En train de jouer | Score: {score}"
