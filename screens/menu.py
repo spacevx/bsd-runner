@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from entities.input.manager import InputEvent
 
 from settings import width, height, GameState, ScreenSize
+from screens.menu_bg import MenuBackground
 
 _BROWSER: bool = sys.platform == "emscripten"
 
@@ -105,13 +106,7 @@ class MainMenu:
             self.manager = UIManager(self.screenSize, theme_path=None)
             self._setupTheme()
 
-        self.bgCache: Surface | None = None
-        self.vignetteCache: Surface | None = None
-        self.scanlinesCache: Surface | None = None
-        self.octagonGlowCache: Surface | None = None
-        self.fenceCache: tuple[Surface, Surface] | None = None
-
-        self._buildCaches()
+        self.menuBg = MenuBackground(self.screenSize)
 
         self.startBtn: Any = None
         self.optionsBtn: Any = None
@@ -127,7 +122,6 @@ class MainMenu:
         self.titleFont: Font = pygame.font.Font(None, self._s(160))
 
         self.time: float = 0.0
-        self.spotlightFlicker: float = 1.0
         self.titlePulse: float = 0.0
 
         self.focusedButtonIndex: int = 0
@@ -242,121 +236,6 @@ class MainMenu:
                     btn.set_relative_position((rect.x, rect.y))
                     btn.set_dimensions((rect.width, rect.height))
 
-    def _buildCaches(self) -> None:
-        w, h = self.screenSize
-        self.bgCache = self._createGradientBg(w, h)
-        self.vignetteCache = self._createVignette(w, h)
-        self.scanlinesCache = self._createScanlines(w, h)
-        self.octagonGlowCache = self._createOctagonGlow(w, h)
-        self.fenceCache = self._createFencePanels(w, h)
-
-    def _createGradientBg(self, w: int, h: int) -> Surface:
-        surf = pygame.Surface((w, h))
-        for y in range(h):
-            t = y / h
-            r = int(5 + 35 * t * t)
-            g = int(2 + 5 * t)
-            b = int(5 + 8 * t)
-            pygame.draw.line(surf, (r, g, b), (0, y), (w, y))
-        return surf.convert()
-
-    def _createVignette(self, w: int, h: int) -> Surface:
-        surf = pygame.Surface((w, h), pygame.SRCALPHA)
-        cx, cy = w // 2, h // 2
-        maxDist = math.hypot(cx, cy)
-        for ring in range(0, int(maxDist), 4):
-            t = ring / maxDist
-            alpha = int(180 * (t ** 2.5))
-            alpha = min(255, alpha)
-            if alpha > 0:
-                pygame.draw.circle(surf, (0, 0, 0, alpha), (cx, cy), int(maxDist - ring), 4)
-        return surf.convert_alpha()
-
-    def _createScanlines(self, w: int, h: int) -> Surface:
-        surf = pygame.Surface((w, h), pygame.SRCALPHA)
-        for y in range(0, h, 3):
-            pygame.draw.line(surf, (0, 0, 0, 25), (0, y), (w, y))
-        return surf.convert_alpha()
-
-    def _createOctagonGlow(self, w: int, h: int) -> Surface:
-        surf = pygame.Surface((w, h), pygame.SRCALPHA)
-        cx, cy = w // 2, int(h * 0.48)
-        radius = self._s(280)
-
-        for glowR in range(radius + self._s(60), radius, -2):
-            alpha = int(15 * (1 - (glowR - radius) / self._s(60)))
-            pts = [(cx + glowR * math.cos(math.pi / 8 + i * math.pi / 4),
-                    cy + glowR * math.sin(math.pi / 8 + i * math.pi / 4)) for i in range(8)]
-            pygame.draw.polygon(surf, (139, 0, 0, alpha), pts, self._s(3))
-
-        ptsOuter = [(cx + radius * math.cos(math.pi / 8 + i * math.pi / 4),
-                      cy + radius * math.sin(math.pi / 8 + i * math.pi / 4)) for i in range(8)]
-        pygame.draw.polygon(surf, (80, 80, 90), ptsOuter, self._s(4))
-
-        innerR = radius - self._s(25)
-        ptsInner = [(cx + innerR * math.cos(math.pi / 8 + i * math.pi / 4),
-                      cy + innerR * math.sin(math.pi / 8 + i * math.pi / 4)) for i in range(8)]
-        pygame.draw.polygon(surf, (60, 60, 70), ptsInner, self._s(2))
-
-        innerR2 = radius - self._s(50)
-        ptsInner2 = [(cx + innerR2 * math.cos(math.pi / 8 + i * math.pi / 4),
-                       cy + innerR2 * math.sin(math.pi / 8 + i * math.pi / 4)) for i in range(8)]
-        pygame.draw.polygon(surf, (45, 45, 55), ptsInner2, self._s(1))
-
-        for i in range(8):
-            angle = math.pi / 8 + i * math.pi / 4
-            x1, y1 = cx + innerR2 * math.cos(angle), cy + innerR2 * math.sin(angle)
-            x2, y2 = cx + radius * math.cos(angle), cy + radius * math.sin(angle)
-            pygame.draw.line(surf, (50, 50, 60), (x1, y1), (x2, y2), self._s(2))
-
-        return surf.convert_alpha()
-
-    def _createFencePanels(self, w: int, h: int) -> tuple[Surface, Surface]:
-        panelW = self._s(120)
-        left = pygame.Surface((panelW, h), pygame.SRCALPHA)
-        right = pygame.Surface((panelW, h), pygame.SRCALPHA)
-
-        spacing = self._s(18)
-        wireColor = (50, 50, 60, 180)
-        highlight = (70, 70, 80, 100)
-
-        for surf, bFlip in [(left, False), (right, True)]:
-            for y in range(-spacing, h + spacing, spacing):
-                for x in range(-spacing, panelW + spacing, spacing):
-                    x1, y1 = x, y
-                    x2, y2 = x + spacing, y + spacing
-                    pygame.draw.line(surf, wireColor, (x1, y1), (x2, y2), 1)
-                    pygame.draw.line(surf, wireColor, (x2, y1), (x1, y2), 1)
-
-            for x in range(0, panelW, spacing):
-                for y in range(0, h, spacing):
-                    pygame.draw.circle(surf, highlight, (x, y), 2)
-
-            fadeW = panelW
-            for i in range(fadeW):
-                alpha = int(255 * (i / fadeW) if bFlip else 255 * (1 - i / fadeW))
-                pygame.draw.line(surf, (0, 0, 0, alpha), (i, 0), (i, h))
-
-        return left.convert_alpha(), right.convert_alpha()
-
-    def _drawSpotlight(self, surf: Surface) -> None:
-        w, h = self.screenSize
-        cx = w // 2
-        spotH = int(h * 0.5)
-        spotSurf = pygame.Surface((w, spotH), pygame.SRCALPHA)
-
-        intensity = 0.7 + 0.3 * self.spotlightFlicker
-
-        for y in range(spotH):
-            t = y / spotH
-            spotWidth = int(self._s(50) + t * self._s(400))
-            alpha = int(35 * intensity * (1 - t * 0.7))
-            if alpha > 0 and spotWidth > 0:
-                rect = pygame.Rect(cx - spotWidth // 2, y, spotWidth, 1)
-                pygame.draw.rect(spotSurf, (255, 250, 240, alpha), rect)
-
-        surf.blit(spotSurf, (0, 0), special_flags=pygame.BLEND_ADD)
-
     def _drawTitle(self, surf: Surface) -> None:
         w, h = self.screenSize
         cx, ty = w // 2, int(h * 0.18)
@@ -421,7 +300,7 @@ class MainMenu:
                 self.optionsBtn.font = self.buttonFont
             if self.quitBtn:
                 self.quitBtn.font = self.buttonFont
-        self._buildCaches()
+        self.menuBg.onResize(newSize)
         self._updateButtonPositions()
         self.titleFont = pygame.font.Font(None, self._s(160))
 
@@ -462,30 +341,14 @@ class MainMenu:
                     self.setState(GameState.QUIT)
 
     def update(self, dt: float) -> None:
+        self.menuBg.update(dt)
         self.time += dt
         self.titlePulse += dt * 3
-        self.spotlightFlicker = 0.85 + 0.15 * math.sin(self.time * 8) + 0.1 * math.sin(self.time * 13)
         if not self.bBrowser:
             self.manager.update(dt)
 
     def draw(self, screen: Surface) -> None:
-        w, h = self.screenSize
-
-        if self.bgCache:
-            screen.blit(self.bgCache, (0, 0))
-        if self.octagonGlowCache:
-            screen.blit(self.octagonGlowCache, (0, 0))
-        self._drawSpotlight(screen)
-
-        if self.fenceCache:
-            screen.blit(self.fenceCache[0], (0, 0))
-            screen.blit(self.fenceCache[1], (w - self.fenceCache[1].get_width(), 0))
-
-        if self.vignetteCache:
-            screen.blit(self.vignetteCache, (0, 0))
-        if self.scanlinesCache:
-            screen.blit(self.scanlinesCache, (0, 0))
-
+        self.menuBg.draw(screen)
         self._drawTitle(screen)
 
         if self.bBrowser:
