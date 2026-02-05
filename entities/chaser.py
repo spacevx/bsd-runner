@@ -54,6 +54,7 @@ class Chaser(AnimatedSprite):
         self.speed: float = self.baseSpeed
 
         self.state: ChaserState = ChaserState.RUNNING
+        self.posY: float = float(self.rect.bottom)
         self.velocityY: float = 0.0
         self.bOnGround: bool = True
         self.currentCage: FallingCage | None = None
@@ -62,6 +63,7 @@ class Chaser(AnimatedSprite):
     def setGroundY(self, groundY: int) -> None:
         self.groundY = groundY
         if self.bOnGround:
+            self.posY = float(groundY)
             self.rect.bottom = groundY
 
     def setTarget(self, playerX: int) -> None:
@@ -78,6 +80,7 @@ class Chaser(AnimatedSprite):
         self.state = ChaserState.CATCHING
         self.catchTargetX = targetX
         if not self.bOnGround:
+            self.posY = float(self.groundY)
             self.rect.bottom = self.groundY
             self.bOnGround = True
             self.velocityY = 0.0
@@ -91,12 +94,14 @@ class Chaser(AnimatedSprite):
     def _jump(self) -> None:
         if self.bOnGround:
             self._setFrames(self.jumpingFrames)
+            self.posY = float(self.rect.bottom)
             self.velocityY = self.jumpForce
             self.state = ChaserState.JUMPING
             self.bOnGround = False
 
     def _jumpOff(self) -> None:
         self._setFrames(self.jumpingFrames)
+        self.posY = float(self.rect.bottom)
         self.velocityY = self.jumpOffForce
         self.state = ChaserState.JUMPING_OFF
         self.currentCage = None
@@ -152,8 +157,6 @@ class Chaser(AnimatedSprite):
         self.image = self._getFrame()
         self.rect = self.image.get_rect(midbottom=oldMidbottom)
 
-    # TODO: Fix a bug, sometime the player is stuck in the y position when jumping, like he is going to jump
-    # The frames animations are ok (so he is running) but the chaser is not back on the ground? (probably a race condition somewhere?)
     def update(self, dt: float, cages: Group[FallingCage] | None = None, obstacles: Group[Obstacle] | None = None) -> None:
         if self.updateAnimation(dt):
             self._updateImage()
@@ -170,11 +173,13 @@ class Chaser(AnimatedSprite):
 
         elif self.state == ChaserState.JUMPING:
             self.velocityY += self.gravity * dt
-            self.rect.y += int(self.velocityY * dt)
+            self.posY += self.velocityY * dt
+            self.rect.bottom = int(self.posY)
 
             if cages:
                 landedCage = self._checkLandOnCage(cages)
                 if landedCage:
+                    self.posY = float(landedCage.rect.top)
                     self.rect.bottom = landedCage.rect.top
                     self.velocityY = 0.0
                     self._setFrames(self.runningFrames)
@@ -182,6 +187,7 @@ class Chaser(AnimatedSprite):
                     self.currentCage = landedCage
 
             if self.rect.bottom >= self.groundY:
+                self.posY = float(self.groundY)
                 self.rect.bottom = self.groundY
                 self.velocityY = 0.0
                 self.bOnGround = True
@@ -190,6 +196,7 @@ class Chaser(AnimatedSprite):
 
         elif self.state == ChaserState.ON_CAGE:
             if self.currentCage:
+                self.posY = float(self.currentCage.rect.top)
                 self.rect.bottom = self.currentCage.rect.top
 
             if self._shouldJumpOff():
@@ -197,9 +204,11 @@ class Chaser(AnimatedSprite):
 
         elif self.state == ChaserState.JUMPING_OFF:
             self.velocityY += self.gravity * dt
-            self.rect.y += int(self.velocityY * dt)
+            self.posY += self.velocityY * dt
+            self.rect.bottom = int(self.posY)
 
             if self.rect.bottom >= self.groundY:
+                self.posY = float(self.groundY)
                 self.rect.bottom = self.groundY
                 self.velocityY = 0.0
                 self.bOnGround = True
