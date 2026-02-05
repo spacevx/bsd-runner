@@ -117,3 +117,4 @@ class MenuBackground:
         self.ceiling.onResize(newSize[0])
         self.ceilingTilemap.on_resize(newSize[0], self.ceiling.height)
         self.demoPlayer.setGroundY(self.groundY)
+        self._buildOverlay()
