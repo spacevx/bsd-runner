@@ -101,6 +101,8 @@ class Chaser(AnimatedSprite):
         self.state = ChaserState.JUMPING_OFF
         self.currentCage = None
 
+    # This logic is not accurated (100%), but was the best i could get to
+    # Used when the chaser need to avoid a cage
     def _findCageToJumpOn(self, cages: Group[FallingCage]) -> FallingCage | None:
         for cage in cages:
             if cage.state not in (CageState.FALLING, CageState.GROUNDED):
@@ -114,6 +116,7 @@ class Chaser(AnimatedSprite):
                 return cage
         return None
 
+    # For lanes on the ground (aka body)
     def _findObstacleToJumpOver(self, obstacles: Group[Obstacle]) -> Obstacle | None:
         for obstacle in obstacles:
             obstacleCenterX = obstacle.rect.centerx
@@ -149,6 +152,8 @@ class Chaser(AnimatedSprite):
         self.image = self._getFrame()
         self.rect = self.image.get_rect(midbottom=oldMidbottom)
 
+    # TODO: Fix a bug, sometime the player is stuck in the y position when jumping, like he is going to jump
+    # The frames animations are ok (so he is running) but the chaser is not back on the ground? (probably a race condition somewhere?)
     def update(self, dt: float, cages: Group[FallingCage] | None = None, obstacles: Group[Obstacle] | None = None) -> None:
         if self.updateAnimation(dt):
             self._updateImage()

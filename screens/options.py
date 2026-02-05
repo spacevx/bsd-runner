@@ -1,11 +1,14 @@
 import math
 import sys
-from typing import Any, Callable
+from typing import Any, Callable, TYPE_CHECKING
 
 import pygame
 from pygame import Surface
 from pygame.event import Event
 from pygame.font import Font
+
+if TYPE_CHECKING:
+    from entities.input.manager import InputEvent, GameAction
 
 from settings import GameState, ScreenSize
 from keybindings import keyBindings

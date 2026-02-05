@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 import pygame
 from pygame import Surface
 from pygame.event import Event
 from pygame.sprite import Group
+
+if TYPE_CHECKING:
+    from entities.input.manager import InputEvent
 
 import flags
 from settings import GameState, ScreenSize, width, height, obstacleSpawnEvent

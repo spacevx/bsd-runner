@@ -11,6 +11,8 @@ from .base import BaseObstacle
 
 playerRunningFramesPath = assetsPath / "player" / "running" / "frames"
 
+# Those are called lanes but they are dead body on the ground, mispell name is because at the beginning it wasn't supposed to be
+# dead bodies
 
 class Obstacle(BaseObstacle):
     _texture: Surface | None = None

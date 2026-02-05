@@ -1,5 +1,10 @@
+from typing import TYPE_CHECKING
+
 import pygame
 from pygame import Surface
+
+if TYPE_CHECKING:
+    from entities.input.manager import GameAction
 
 
 class KeyBindings:

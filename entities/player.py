@@ -1,8 +1,12 @@
 from enum import Enum, auto
+from typing import TYPE_CHECKING
 
 import pygame
 from pygame import Rect, Surface
 from pygame.math import Vector2
+
+if TYPE_CHECKING:
+    from entities.input.manager import InputEvent
 
 from entities.animation import AnimatedSprite, AnimationFrame, loadFrames
 from keybindings import keyBindings
@@ -124,7 +128,6 @@ class Player(AnimatedSprite):
         self.state = PlayerState.TRAPPED
         self.image = self._getFrame()
         self.rect = self.image.get_rect(centerx=self.rect.centerx, bottom=self.groundY)
-
 
     def tackle(self) -> None:
         if self.state == PlayerState.SLIDING:
