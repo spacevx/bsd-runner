@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 
 import pygame
@@ -14,12 +15,13 @@ playerRunningFramesPath = assetsPath / "player" / "running" / "frames"
 # Those are called lanes but they are dead body on the ground, mispell name is because at the beginning it wasn't supposed to be
 # dead bodies
 
+lanesDir: Path = assetsPath / "lanes"
+
 class Obstacle(BaseObstacle):
-    _texture: Surface | None = None
-    _cache: dict[tuple[int, int], Surface] = {}
+    _textures: list[Surface] | None = None
+    _cache: dict[tuple[int, int, int], Surface] = {}
     _playerHeight: int | None = None
 
-    bodyImagePath: Path = assetsPath / "lanes" / "body.png"
     playerScale: float = 0.15
     heightRatio: float = 0.7
     widthRatio: float = 1.8
@@ -33,29 +35,38 @@ class Obstacle(BaseObstacle):
     def __init__(self, x: int, groundY: int, scale: float = 1.0) -> None:
         super().__init__()
         self.scale = scale
+        textures = self._loadTextures()
+        self.variant = random.randrange(len(textures)) if textures else -1
         playerH = self._getPlayerHeight()
         h = max(1, int(playerH * self.heightRatio * scale))
         w = max(1, int(h * self.widthRatio))
-        self.image = self._getImage(w, h)
+        self.image = self._getImage(w, h, self.variant)
         self.rect = self.image.get_rect(centerx=x, bottom=groundY)
 
     @classmethod
     def clearCache(cls) -> None:
-        cls._texture = None
+        cls._textures = None
         cls._cache.clear()
         cls._playerHeight = None
 
     @classmethod
-    def _loadTexture(cls) -> Surface | None:
-        if cls._texture is None:
+    def _loadTextures(cls) -> list[Surface]:
+        if cls._textures is not None:
+            return cls._textures
+
+        paths = sorted(lanesDir.glob("body_*.png"))
+        loaded: list[Surface] = []
+        for p in paths:
             try:
-                raw = pygame.image.load(str(cls.bodyImagePath))
+                raw = pygame.image.load(str(p))
                 if pygame.display.get_surface():
                     raw = raw.convert_alpha()
-                cls._texture = cls._cropToContent(raw)
+                loaded.append(cls._cropToContent(raw))
             except (pygame.error, FileNotFoundError):
-                cls._texture = None
-        return cls._texture
+                pass
+
+        cls._textures = loaded
+        return loaded
 
     # Took from a pygame forum, for a issue where the sprite couldn't be croped right
     @classmethod
@@ -82,15 +93,18 @@ class Obstacle(BaseObstacle):
         return cropped
 
     @classmethod
-    def _getImage(cls, w: int, h: int) -> Surface:
-        key = (w, h)
+    def _getImage(cls, w: int, h: int, variant: int) -> Surface:
+        key = (w, h, variant)
         if key not in cls._cache:
-            cls._cache[key] = cls._createSurface(w, h)
+            cls._cache[key] = cls._createSurface(w, h, variant)
         return cls._cache[key]
 
     @classmethod
-    def _createSurface(cls, w: int, h: int) -> Surface:
-        if (texture := cls._loadTexture()) is not None:
+    def _createSurface(cls, w: int, h: int, variant: int) -> Surface:
+        textures = cls._loadTextures()
+        texture = textures[variant] if 0 <= variant < len(textures) else None
+
+        if texture is not None:
             tw, th = texture.get_width(), texture.get_height()
             srcRatio = tw / th
             tgtRatio = w / h
