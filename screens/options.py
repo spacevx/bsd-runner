@@ -9,11 +9,12 @@ from pygame.font import Font
 if TYPE_CHECKING:
     from entities.input.manager import InputEvent
 
+import settings
 from settings import GameState, ScreenSize
 from keybindings import keyBindings
 from strings import (
     optionsTitle, optionsControls, optionsJump, optionsSlide, optionsRestart,
-    optionsReset, optionsBack, optionsPressKey
+    optionsReset, optionsBack, optionsPressKey, optionsSound
 )
 from screens.menu_bg import MenuBackground
 from screens.ui import ModernButton
@@ -46,6 +47,12 @@ class OptionsScreen:
         self._iconRects: list[pygame.Rect] = [pygame.Rect(0, 0, 0, 0) for _ in _bindingDefs]
         self._hovered: list[bool] = [False] * len(_bindingDefs)
         self._listeningIdx: int = -1
+
+        self._soundPanelSurf: Surface | None = None
+        self._soundPanelY: int = 0
+        self._soundPanelH: int = 0
+        self._soundToggleRect: pygame.Rect = pygame.Rect(0, 0, 0, 0)
+        self._soundHovered: bool = False
 
         self.resetBtn: ModernButton
         self.backBtn: ModernButton
@@ -94,10 +101,33 @@ class OptionsScreen:
                 iconCenterX - sz // 2, rowCY - sz // 2, sz, sz
             )
 
+        soundGap = self._s(20)
+        soundPadX = self._s(40)
+        soundRowH = self._s(50)
+        soundHeaderH = self._s(55)
+        soundPadBottom = self._s(15)
+
+        soundLabel = self.labelFont.render(optionsSound, True, (240, 240, 245))
+        toggleW = self._s(70)
+        toggleGap = self._s(30)
+        soundContentW = soundLabel.get_width() + toggleGap + toggleW
+        self._soundPanelW = soundContentW + soundPadX * 2
+        self._soundPanelH = soundHeaderH + soundRowH + soundPadBottom
+        self._soundPanelX = cx - self._soundPanelW // 2
+        self._soundPanelY = self._panelY + self._panelH + soundGap
+
+        self._soundLabelX = self._soundPanelX + soundPadX
+        soundRowCY = self._soundPanelY + soundHeaderH + soundRowH // 2
+        self._soundRowCY = soundRowCY
+
+        toggleH = self._s(32)
+        toggleX = self._soundLabelX + soundLabel.get_width() + toggleGap
+        self._soundToggleRect = pygame.Rect(toggleX, soundRowCY - toggleH // 2, toggleW, toggleH)
+
     def _getActionButtonRects(self) -> tuple[pygame.Rect, pygame.Rect]:
         w, h = self.screenSize
         cx = w // 2
-        baseY = int(h * 0.75)
+        baseY = self._soundPanelY + self._soundPanelH + self._s(30)
         btnW, btnH = self._s(220), self._s(55)
         gap = self._s(40)
 
@@ -187,6 +217,57 @@ class OptionsScreen:
                 keyBindings.getKeyName(key),
             )
 
+    def _buildSoundPanelSurf(self) -> None:
+        pw, ph = self._soundPanelW, self._soundPanelH
+        surf = pygame.Surface((pw, ph), pygame.SRCALPHA)
+        cr = self._s(12)
+        pygame.draw.rect(surf, (15, 17, 24, 200), (0, 0, pw, ph), border_radius=cr)
+        pygame.draw.rect(surf, (45, 48, 60), (0, 0, pw, ph), 1, border_radius=cr)
+        self._soundPanelSurf = surf
+
+    def _drawSoundPanel(self, surf: Surface) -> None:
+        w = self.screenSize[0]
+        cx = w // 2
+
+        if self._soundPanelSurf is None:
+            self._buildSoundPanelSurf()
+
+        assert self._soundPanelSurf is not None
+        surf.blit(self._soundPanelSurf, (self._soundPanelX, self._soundPanelY))
+
+        sectionY = self._soundPanelY + self._s(25)
+        glowSurf = self.sectionFont.render(optionsSound, True, (255, 215, 0))
+        glowSurf.set_alpha(40)
+        for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
+            rect = glowSurf.get_rect(center=(cx + dx, sectionY + dy))
+            surf.blit(glowSurf, rect)
+        sectionSurf = self.sectionFont.render(optionsSound, True, (255, 215, 0))
+        sectionRect = sectionSurf.get_rect(center=(cx, sectionY))
+        surf.blit(sectionSurf, sectionRect)
+
+        labelSurf = self.labelFont.render(optionsSound, True, (240, 240, 245))
+        labelRect = labelSurf.get_rect(midleft=(self._soundLabelX, self._soundRowCY))
+        surf.blit(labelSurf, labelRect)
+
+        self._drawToggle(surf, self._soundToggleRect, settings.bSoundEnabled, self._soundHovered)
+
+    def _drawToggle(self, surf: Surface, rect: pygame.Rect, bOn: bool, bHovered: bool) -> None:
+        cr = rect.height // 2
+        bgColor = (40, 140, 50) if bOn else (60, 62, 75)
+        pygame.draw.rect(surf, bgColor, rect, border_radius=cr)
+
+        if bHovered:
+            highlight = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+            pygame.draw.rect(highlight, (255, 255, 255, 20), highlight.get_rect(), border_radius=cr)
+            surf.blit(highlight, rect.topleft)
+
+        pygame.draw.rect(surf, (80, 82, 95), rect, 1, border_radius=cr)
+
+        knobR = rect.height // 2 - self._s(4)
+        knobX = rect.right - knobR - self._s(5) if bOn else rect.left + knobR + self._s(5)
+        knobY = rect.centery
+        pygame.draw.circle(surf, (240, 240, 245), (knobX, knobY), knobR)
+
     def _drawKeyIcon(self, surf: Surface, icon: Surface | None, rect: pygame.Rect,
                       bListening: bool, bHovered: bool, fallbackText: str) -> None:
         pad = self._s(4)
@@ -221,6 +302,7 @@ class OptionsScreen:
         self.iconSize = self._s(50)
         self.menuBg.onResize(newSize)
         self.panelSurf = None
+        self._soundPanelSurf = None
         self._updateButtonPositions()
         self._loadKeyIcons()
         self.titleFont = pygame.font.Font(None, self._s(120))
@@ -239,8 +321,12 @@ class OptionsScreen:
         if event.type == pygame.MOUSEMOTION:
             for i, rect in enumerate(self._iconRects):
                 self._hovered[i] = rect.collidepoint(event.pos)
+            self._soundHovered = self._soundToggleRect.collidepoint(event.pos)
 
         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            if self._soundToggleRect.collidepoint(event.pos):
+                settings.bSoundEnabled = not settings.bSoundEnabled
+                return
             for i, rect in enumerate(self._iconRects):
                 if rect.collidepoint(event.pos):
                     self._listeningIdx = i
@@ -261,5 +347,6 @@ class OptionsScreen:
         self.menuBg.draw(screen)
         self._drawTitle(screen)
         self._drawControlsPanel(screen)
+        self._drawSoundPanel(screen)
         self.resetBtn.draw(screen)
         self.backBtn.draw(screen)

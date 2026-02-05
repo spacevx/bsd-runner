@@ -8,6 +8,7 @@ from pygame.math import Vector2
 if TYPE_CHECKING:
     from entities.input.manager import InputEvent
 
+import settings
 from entities.animation import AnimatedSprite, AnimationFrame, loadFrames
 from keybindings import keyBindings
 from paths import assetsPath
@@ -103,7 +104,8 @@ class Player(AnimatedSprite):
         if self.bOnGround and self.state != PlayerState.SLIDING:
             if _jumpSound is None:
                 _jumpSound = pygame.mixer.Sound(jumpSoundPath)
-            _jumpSound.play()
+            if settings.bSoundEnabled:
+                _jumpSound.play()
             self.velocity.y = self.jumpForce
             self.state = PlayerState.JUMPING
             self.bOnGround = False
@@ -115,7 +117,8 @@ class Player(AnimatedSprite):
         if self.bOnGround and self.state == PlayerState.RUNNING and self.slideCooldownTimer <= 0:
             if _slideSound is None:
                 _slideSound = pygame.mixer.Sound(slideSoundPath)
-            _slideSound.play()
+            if settings.bSoundEnabled:
+                _slideSound.play()
             self.state = PlayerState.SLIDING
             self.slideTimer = self.slideDuration
             self.slideBoostTimer = self.slideDuration

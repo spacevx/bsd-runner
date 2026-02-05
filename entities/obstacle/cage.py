@@ -3,6 +3,7 @@ from enum import Enum, auto
 import pygame
 from pygame import Surface, Rect
 
+import settings
 from paths import assetsPath
 from settings import Color
 from .base import BaseObstacle
@@ -177,7 +178,8 @@ class FallingCage(BaseObstacle):
                 self.groundedTimer = self.groundedDuration
                 if _cageFallSound is None:
                     _cageFallSound = pygame.mixer.Sound(cageFallSoundPath)
-                _cageFallSound.play()
+                if settings.bSoundEnabled:
+                    _cageFallSound.play()
 
         elif self.state == CageState.GROUNDED:
             self.groundedTimer -= dt
