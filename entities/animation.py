@@ -35,13 +35,7 @@ class AnimatedSprite(Sprite):
         return bAdvanced
 
 
-def loadFrames(
-    path: Path,
-    pattern: str = r"frame_(\d+)_delay-([\d.]+)s\.gif",
-    scale: float = 1.0,
-    targetHeight: Optional[int] = None,
-    frameSlice: slice | None = None
-) -> list[AnimationFrame]:
+def loadFrames(path: Path, pattern: str = r"frame_(\d+)_delay-([\d.]+)s\.gif", scale: float = 1.0, targetHeight: Optional[int] = None, frameSlice: slice | None = None) -> list[AnimationFrame]:
     regex = re.compile(pattern)
     frames: list[AnimationFrame] = []
 

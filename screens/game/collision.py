@@ -31,7 +31,7 @@ class CollisionSystem:
 
     def _obstacleCallback(self, player: Player, obstacle: Obstacle) -> bool:
         playerHitbox = player.getHitbox()
-        obstacleHitbox = obstacle.get_hitbox()
+        obstacleHitbox = obstacle.getHixbox()
 
         if not playerHitbox.colliderect(obstacleHitbox):
             return False
@@ -47,7 +47,7 @@ class CollisionSystem:
             return False
 
         playerHitbox = player.getHitbox()
-        cageHitbox = cage.get_hitbox()
+        cageHitbox = cage.getHitbox()
 
         if not playerHitbox.colliderect(cageHitbox):
             return False

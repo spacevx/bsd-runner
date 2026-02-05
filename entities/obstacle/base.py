@@ -15,10 +15,11 @@ class BaseObstacle(Sprite):
         self.speed = 400.0
 
     @abstractmethod
-    def get_hitbox(self) -> Rect:
+    def getHitbox(self) -> Rect:
         pass
 
     def update(self, dt: float) -> None:
         self.rect.x -= int(self.speed * dt)
         if self.rect.right < -50:
             self.kill()
+
