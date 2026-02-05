@@ -4,3 +4,4 @@ Pillow>=10.0.0
 mypy>=1.8.0
 types-Pillow>=10.0.0
 pypresence>=4.3.0
+pyinstaller>=6.0.0

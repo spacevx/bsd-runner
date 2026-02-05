@@ -1,3 +1,3 @@
 @echo off
-pyinstaller build.spec --noconfirm
+python -m PyInstaller build.spec --noconfirm
 pause
