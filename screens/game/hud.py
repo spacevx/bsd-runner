@@ -8,7 +8,7 @@ from strings import (
     gameOver, gameRestartKey, gameRestartButton, hudJump, hudSlide, hudDoubleJump,
     levelComplete, levelCompleteRestart, gameOverMenuKey, gameOverMenuButton
 )
-from screens.ui import _gradientRect
+from screens.ui import _gradientRect, tablerIcon
 
 
 class HUD:
@@ -311,6 +311,7 @@ class HUD:
     def drawGameOver(self, screen: Surface, score: int) -> None:
         from entities.input.manager import InputSource, GameAction
         from entities.input.joybindings import JoyBindings
+        from pytablericons import OutlineIcon
 
         curSource = self.inputManager.lastInputSource
         if (self._gameOverSurf is not None
@@ -329,37 +330,77 @@ class HUD:
 
         cx, cy = w // 2, h // 2
 
-        panelW, panelH = self._s(620), self._s(380)
-        cr = self._s(15)
-        panel = _gradientRect(panelW, panelH, (25, 27, 35), (12, 14, 20), 240, cr)
-        pygame.draw.rect(panel, (139, 0, 0, 200), (0, 0, panelW, panelH), self._s(2), border_radius=cr)
+        panelW, panelH = self._s(640), self._s(460)
+        cr = self._s(18)
+        panel = _gradientRect(panelW, panelH, (22, 24, 32), (10, 12, 18), 240, cr)
+        pygame.draw.rect(panel, (160, 30, 30, 180), (0, 0, panelW, panelH), self._s(2), border_radius=cr)
+
+        topAccentW = panelW - self._s(60)
+        if topAccentW > 0:
+            topAccent = _gradientRect(topAccentW, self._s(3), (200, 40, 40), (100, 15, 15), 200, 1)
+            panel.blit(topAccent, ((panelW - topAccentW) // 2, 0))
+
         hlW = panelW - self._s(30)
         if hlW > 0:
             hl = pygame.Surface((hlW, 1), pygame.SRCALPHA)
-            hl.fill((255, 255, 255, 15))
-            panel.blit(hl, (self._s(15), 1))
-        surf.blit(panel, (cx - panelW // 2, cy - panelH // 2))
+            hl.fill((255, 255, 255, 12))
+            panel.blit(hl, (self._s(15), self._s(4)))
 
-        titleY = cy - self._s(100)
-        titleSurf = self.font.render(gameOver, True, (255, 50, 50))
+        panelX, panelY = cx - panelW // 2, cy - panelH // 2
+        surf.blit(panel, (panelX, panelY))
+
+        iconSize = self._s(72)
+        iconY = panelY + self._s(35)
+        iconSurf = tablerIcon(OutlineIcon.SKULL, iconSize, '#FF3232', 1.8)
+
+        glowSize = iconSize + self._s(40)
+        iconGlow = pygame.Surface((glowSize, glowSize), pygame.SRCALPHA)
+        pygame.draw.circle(iconGlow, (180, 20, 20, 25), (glowSize // 2, glowSize // 2), glowSize // 2)
+        surf.blit(iconGlow, (cx - glowSize // 2, iconY + iconSize // 2 - glowSize // 2))
+        surf.blit(iconSurf, (cx - iconSize // 2, iconY))
+
+        titleY = iconY + iconSize + self._s(30)
+        titleSurf = self.font.render(gameOver, True, (255, 55, 55))
         titleRect = titleSurf.get_rect(center=(cx, titleY))
 
-        for offset in range(self._s(15), 0, -2):
-            glow = self.font.render(gameOver, True, (139, 0, 0))
-            glow.set_alpha(int(60 * (1 - offset / self._s(15))))
-            for dx, dy in [(-offset, 0), (offset, 0), (0, -offset), (0, offset)]:
+        maxGlow = self._s(12)
+        for offset in range(maxGlow, 0, -2):
+            glow = self.font.render(gameOver, True, (160, 0, 0))
+            glow.set_alpha(int(50 * (1 - offset / maxGlow)))
+            for dx, dy in [(-offset, 0), (offset, 0), (0, -offset), (0, offset),
+                           (-offset // 2, -offset // 2), (offset // 2, -offset // 2),
+                           (-offset // 2, offset // 2), (offset // 2, offset // 2)]:
                 surf.blit(glow, titleSurf.get_rect(center=(cx + dx, titleY + dy)))
 
-        shadow = self.font.render(gameOver, True, (50, 0, 0))
-        surf.blit(shadow, titleSurf.get_rect(center=(cx + self._s(4), titleY + self._s(4))))
+        shadow = self.font.render(gameOver, True, (40, 0, 0))
+        surf.blit(shadow, titleSurf.get_rect(center=(cx + self._s(3), titleY + self._s(3))))
         surf.blit(titleSurf, titleRect)
 
+        divY = titleY + titleSurf.get_height() // 2 + self._s(22)
+        divW = panelW - self._s(80)
+        if divW > 0:
+            divSurf = pygame.Surface((divW, self._s(1)), pygame.SRCALPHA)
+            halfW = divW // 2
+            for px in range(divW):
+                dist = abs(px - halfW)
+                a = max(0, int(40 * (1 - dist / halfW)))
+                divSurf.set_at((px, 0), (255, 60, 60, a))
+            surf.blit(divSurf, (cx - divW // 2, divY))
+
         scoreText = f"Score Final: {score}"
-        scoreSurf = self.scoreFont.render(scoreText, True, gold)
-        scoreRect = scoreSurf.get_rect(center=(cx, cy))
-        scoreShadow = self.scoreFont.render(scoreText, True, (100, 80, 0))
-        surf.blit(scoreShadow, scoreSurf.get_rect(center=(cx + self._s(2), cy + self._s(2))))
-        surf.blit(scoreSurf, scoreRect)
+        scoreSurf = self.scoreFont.render(scoreText, True, (220, 230, 255))
+        scoreY = divY + self._s(35)
+
+        pillW = scoreSurf.get_width() + self._s(50)
+        pillH = scoreSurf.get_height() + self._s(20)
+        pillCr = pillH // 2
+        pill = _gradientRect(pillW, pillH, (30, 28, 18), (18, 16, 10), 160, pillCr)
+        pygame.draw.rect(pill, (180, 150, 0, 80), (0, 0, pillW, pillH), 1, border_radius=pillCr)
+        surf.blit(pill, (cx - pillW // 2, scoreY - self._s(10)))
+
+        scoreShadow = self.scoreFont.render(scoreText, True, (30, 35, 50))
+        surf.blit(scoreShadow, scoreSurf.get_rect(center=(cx + self._s(2), scoreY + pillH // 2 - self._s(10) + self._s(2))))
+        surf.blit(scoreSurf, scoreSurf.get_rect(center=(cx, scoreY + pillH // 2 - self._s(10))))
 
         restartKeyName = keyBindings.getKeyName(keyBindings.restart)
         if curSource == InputSource.JOYSTICK:
@@ -377,12 +418,15 @@ class HUD:
             restartText = gameRestartKey.format(key=restartKeyName)
             menuText = gameOverMenuKey
 
-        restartSurf = self.smallFont.render(restartText, True, white)
-        restartRect = restartSurf.get_rect(center=(cx, cy + self._s(70)))
+        actionsY = scoreY + pillH + self._s(20)
+        restartSurf = self.smallFont.render(restartText, True, (240, 240, 245))
+        restartRect = restartSurf.get_rect(center=(cx, actionsY))
+        restartShadow = self.smallFont.render(restartText, True, (0, 0, 0))
+        surf.blit(restartShadow, restartSurf.get_rect(center=(cx + 1, actionsY + 1)))
         surf.blit(restartSurf, restartRect)
 
-        menuSurf = self.smallFont.render(menuText, True, (160, 162, 175))
-        menuRect = menuSurf.get_rect(center=(cx, cy + self._s(110)))
+        menuSurf = self.smallFont.render(menuText, True, (130, 132, 150))
+        menuRect = menuSurf.get_rect(center=(cx, actionsY + self._s(40)))
         surf.blit(menuSurf, menuRect)
 
         screen.blit(self._gameOverSurf, (0, 0))
