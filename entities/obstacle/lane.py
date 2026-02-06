@@ -79,7 +79,7 @@ class Obstacle(BaseObstacle):
     @classmethod
     def _cropToContent(cls, surface: Surface) -> Surface:
         mask = pygame.mask.from_surface(surface, threshold=10)
-        rects = mask.get_bounding_rects()
+        rects: list[Rect] = mask.get_bounding_rects()  # type: ignore
         if not rects:
             return surface
 

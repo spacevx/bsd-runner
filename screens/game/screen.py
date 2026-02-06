@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, TYPE_CHECKING
+from typing import Any, Callable, TYPE_CHECKING
 
 import pygame
 from pygame import Surface
@@ -61,14 +61,14 @@ class GameScreen:
         self.localPlayer = self._createPlayer()
         self.chaser: Chaser | None = self._createChaser()
 
-        self.allSprites: Group[pygame.sprite.Sprite] = pygame.sprite.Group()
+        self.allSprites: Group[Any] = pygame.sprite.Group()
         self.allSprites.add(self.localPlayer)
         if self.chaser:
             self.allSprites.add(self.chaser)
 
-        self.obstacles: Group[Obstacle] = pygame.sprite.Group()
+        self.obstacles: Group[Any] = pygame.sprite.Group()
         self.ceiling = Ceiling(self.screenSize[0], self.screenSize[1])
-        self.fallingCages: Group[FallingCage] = pygame.sprite.Group()
+        self.fallingCages: Group[Any] = pygame.sprite.Group()
 
         self.score: int = 0
         self.bGameOver: bool = False
@@ -334,18 +334,21 @@ class GameScreen:
             cage.triggerFall()
             self.finaleCage = cage
 
-        if self.finaleCage and not self.bChaserTrapped:
-            self.finaleCage.update(dt)
-            if self.chaser:
-                self.finaleCage.rect.centerx = self.chaser.rect.centerx
-                self.finaleCage.chainRect.centerx = self.chaser.rect.centerx
+        if self.finaleCage:
+            if not self.bChaserTrapped:
+                self.finaleCage.update(dt)
+                if self.chaser:
+                    self.finaleCage.rect.centerx = self.chaser.rect.centerx
+                    self.finaleCage.chainRect.centerx = self.chaser.rect.centerx
 
-            if self.finaleCage.state in (CageState.FALLING, CageState.GROUNDED) and self.chaser:
-                if self.finaleCage.rect.bottom >= self.chaser.rect.top:
-                    self.chaser.trap()
-                    self.finaleCage.rect.bottom = self.groundY
-                    self.bChaserTrapped = True
-                    self.bLevelComplete = True
+                if self.finaleCage.state in (CageState.FALLING, CageState.GROUNDED) and self.chaser:
+                    if self.finaleCage.rect.bottom >= self.chaser.rect.top:
+                        self.chaser.trap()
+                        self.finaleCage.trapPlayer(self.chaser.rect.centerx)
+                        self.bChaserTrapped = True
+                        self.bLevelComplete = True
+            else:
+                self.finaleCage.update(dt)
 
     def _updateTrapped(self, dt: float) -> None:
         self.trappedTimer -= dt
