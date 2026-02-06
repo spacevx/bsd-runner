@@ -49,7 +49,8 @@ class Player(AnimatedSprite):
 
     def __init__(self, x: int, groundY: int, gravity: float = 1100.0, jumpForce: float = -650.0,
                  bDoubleJump: bool = False, doubleJumpForce: float = -780.0,
-                 bSlideEnabled: bool = True, coyoteTime: float = 0.0, jumpBuffer: float = 0.0) -> None:
+                 bSlideEnabled: bool = True, coyoteTime: float = 0.0, jumpBuffer: float = 0.0,
+                 bLaserEnabled: bool = False, laserCooldown: float = 0.3) -> None:
         # Please don't remove the slice on the frames here, some frames are invalid, so if you took/render all the frames for running
         # It's going to create a small bug where the running animation will broke for 1seconds (so 1000 frames) like static player
         runningFrames = loadFrames(runningFramesPath, scale=self.playerScale, frameSlice=slice(116, 132))
@@ -82,6 +83,9 @@ class Player(AnimatedSprite):
         self.jumpBufferTime: float = jumpBuffer
         self.coyoteTimer: float = 0.0
         self.jumpBufferTimer: float = 0.0
+        self.bLaserEnabled: bool = bLaserEnabled
+        self.laserCooldown: float = laserCooldown
+        self.laserCooldownTimer: float = 0.0
 
     # Used for setting the frames of the player (runnning, sliding, trapped) check animation.py for more info
     def _setFrames(self, frames: list[AnimationFrame]) -> None:
@@ -166,6 +170,15 @@ class Player(AnimatedSprite):
             self.image = self._getFrame()
             self.rect = self.image.get_rect(centerx=oldCenterx, bottom=self.groundY + self.slideYOffset)
 
+    def canShoot(self) -> bool:
+        return self.bLaserEnabled and self.laserCooldownTimer <= 0
+
+    def shoot(self) -> bool:
+        if not self.canShoot():
+            return False
+        self.laserCooldownTimer = self.laserCooldown
+        return True
+
     def _endSlide(self) -> None:
         if self.state == PlayerState.SLIDING:
             self.state = PlayerState.RUNNING
@@ -243,6 +256,8 @@ class Player(AnimatedSprite):
             self.slideBoostTimer -= dt
         if self.slideCooldownTimer > 0:
             self.slideCooldownTimer -= dt
+        if self.laserCooldownTimer > 0:
+            self.laserCooldownTimer -= dt
 
     def isBoostActive(self) -> bool:
         return self.slideBoostTimer > 0

@@ -86,3 +86,15 @@ class GameCollision:
             result.bCaught = True
 
         return result
+
+    def checkLaserHit(self, playerX: int, playerY: int, obstacles: Group,
+                      laserRange: float) -> Obstacle | None:
+        from entities.obstacle.geometric import GeometricObstacle
+
+        laserRect = pygame.Rect(playerX, playerY - 15, int(laserRange), 30)
+
+        for obstacle in obstacles:
+            if isinstance(obstacle, GeometricObstacle):
+                if laserRect.colliderect(obstacle.getHitbox()):
+                    return obstacle
+        return None

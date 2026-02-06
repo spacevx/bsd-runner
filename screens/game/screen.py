@@ -91,6 +91,8 @@ class GameScreen:
         self.bLevelComplete: bool = False
         self.finaleCage: FallingCage | None = None
 
+        self.laserBeams: list[Any] = []
+
         self.tileset: TileSet | None = None
         self.groundTilemap: GroundTilemap | None = None
         self.ceilingTileset: CeilingTileSet | None = None
@@ -110,7 +112,8 @@ class GameScreen:
                        bFallingCages=levelConfig.bFallingCages)
         self.spawner = ObstacleSpawner(
             self.screenSize, self.groundY, self.scrollSpeed,
-            levelConfig.obstacleMinDelay, levelConfig.obstacleMaxDelay
+            levelConfig.obstacleMinDelay, levelConfig.obstacleMaxDelay,
+            levelConfig.bGeometricObstacles
         )
         self.gameCollision = GameCollision(self.screenSize)
 
@@ -121,13 +124,45 @@ class GameScreen:
             gravity=cfg.gravity, jumpForce=cfg.jumpForce,
             bDoubleJump=cfg.bDoubleJump, doubleJumpForce=cfg.doubleJumpForce,
             bSlideEnabled=cfg.bSlideEnabled,
-            coyoteTime=cfg.coyoteTime, jumpBuffer=cfg.jumpBuffer
+            coyoteTime=cfg.coyoteTime, jumpBuffer=cfg.jumpBuffer,
+            bLaserEnabled=cfg.bLaserEnabled, laserCooldown=cfg.laserCooldown
         )
 
     def _createChaser(self) -> Chaser | None:
-        if flags.bDisableChaser:
+        if flags.bDisableChaser or not self.levelConfig.bHasChaser:
             return None
         return Chaser(self._s(-200), self.groundY, framesPath=self.levelConfig.chaserFramesPath)
+
+    def _fireLaser(self) -> None:
+        from entities.laser import LaserBeam
+
+        if not self.levelConfig.bLaserEnabled:
+            return
+
+        playerX = self.localPlayer.rect.right
+        eyeY = self.localPlayer.rect.top + self._s(60)
+        laserRange = self.levelConfig.laserRange
+
+        hitObstacle = self.gameCollision.checkLaserHit(
+            playerX, eyeY, self.obstacles, laserRange
+        )
+
+        endX = playerX + int(laserRange)
+        if hitObstacle:
+            endX = hitObstacle.rect.left
+            if hasattr(hitObstacle, 'takeDamage'):
+                if hitObstacle.takeDamage(1):
+                    hitObstacle.kill()
+                    self.score += 100
+
+        beam = LaserBeam(playerX, eyeY, endX, eyeY)
+        self.laserBeams.append(beam)
+
+    def _updateLasers(self, dt: float) -> None:
+        for beam in self.laserBeams[:]:
+            beam.update(dt)
+            if not beam.bActive:
+                self.laserBeams.remove(beam)
 
     def _s(self, val: int) -> int:
         return max(1, int(val * self.scale))
@@ -245,9 +280,17 @@ class GameScreen:
             if event.key == keyBindings.restart and bCanRestart:
                 self.reset()
             elif not self.bGameOver and not self.bLevelComplete:
-                self.localPlayer.handleInput(event, inputEvent)
+                if event.key == keyBindings.shoot:
+                    if self.localPlayer.shoot():
+                        self._fireLaser()
+                else:
+                    self.localPlayer.handleInput(event, inputEvent)
         elif inputEvent and not self.bGameOver and not self.bLevelComplete:
-            self.localPlayer.handleInput(event, inputEvent)
+            if inputEvent.action == GameAction.SHOOT and inputEvent.bPressed:
+                if self.localPlayer.shoot():
+                    self._fireLaser()
+            else:
+                self.localPlayer.handleInput(event, inputEvent)
 
         if inputEvent:
             name = inputEvent.action.name
@@ -322,6 +365,7 @@ class GameScreen:
             self.slowdownTimer -= dt
 
         self.localPlayer.update(dt)
+        self._updateLasers(dt)
         if self.chaser:
             self.chaser.setTarget(self.localPlayer.rect.centerx)
             self.chaser.update(dt, self.fallingCages, self.obstacles)
@@ -337,6 +381,11 @@ class GameScreen:
         self._updateFinale(dt)
 
     def _updateFinale(self, dt: float) -> None:
+        if not self.chaser and self.score >= self.levelConfig.finaleScore and not self.bLevelComplete:
+            self.bLevelComplete = True
+            pygame.time.set_timer(obstacleSpawnEvent, 0)
+            return
+
         if not self.bFinaleArmed and self.score >= self.levelConfig.finaleScore and self.chaser:
             self.bFinaleArmed = True
             pygame.time.set_timer(obstacleSpawnEvent, 0)
@@ -348,7 +397,7 @@ class GameScreen:
                     self.finaleCage.trapPlayer(self.chaser.rect.centerx)
                     self.bChaserTrapped = True
 
-        if self.bChaserTrapped and not self.bLevelComplete:
+        if self.bChaserTrapped and not self.bLevelComplete and self.finaleCage:
             self.localPlayer.update(dt)
             self.finaleCage.update(dt)
             if self.localPlayer.state != PlayerState.SLIDING:
@@ -430,6 +479,9 @@ class GameScreen:
         if self.groundTilemap:
             self.groundTilemap.draw(screen)
         self.obstacles.draw(screen)
+
+        for beam in self.laserBeams:
+            beam.draw(screen)
 
         if self.bPlayerTackled and self._tackledImage:
             rotatedRect = self._tackledImage.get_rect(midbottom=(self.localPlayer.rect.centerx, self.groundY))

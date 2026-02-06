@@ -19,19 +19,19 @@ class KeyBindings:
     def _init(self) -> None:
         self.jump: int = pygame.K_UP
         self.slide: int = pygame.K_DOWN
+        self.shoot: int = pygame.K_x
         self.restart: int = pygame.K_r
-        self._defaults: dict[str, int] = {"jump": pygame.K_UP, "slide": pygame.K_DOWN, "restart": pygame.K_r}
+        self._defaults: dict[str, int] = {"jump": pygame.K_UP, "slide": pygame.K_DOWN, "shoot": pygame.K_x, "restart": pygame.K_r}
 
     def reset(self) -> None:
         self.jump = self._defaults["jump"]
         self.slide = self._defaults["slide"]
+        self.shoot = self._defaults["shoot"]
         self.restart = self._defaults["restart"]
 
     def getKeyName(self, key: int) -> str:
         return pygame.key.name(key).upper()
 
-    # TODO: need to use assets for icons but those are for now way too heavy and i need to store them in memory (which is a lot for a small like this)
-    # So right now it's just raw key icons
     def getKeyIcon(self, key: int, size: int = 32) -> Surface | None:
         from keyicons import getKeyIcon
         return getKeyIcon(key, size)
@@ -43,6 +43,8 @@ class KeyBindings:
             return GameAction.JUMP
         elif key == self.slide:
             return GameAction.SLIDE
+        elif key == self.shoot:
+            return GameAction.SHOOT
         elif key in (pygame.K_SPACE, pygame.K_z, pygame.K_w):
             return GameAction.JUMP
         elif key == pygame.K_s:

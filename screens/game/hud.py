@@ -62,7 +62,7 @@ class HUD:
 
     def _drawHeart(self, surf: Surface, cx: int, cy: int, size: int,
                    color: str) -> None:
-        from pytablericons import FilledIcon
+        from pytablericons import FilledIcon  # type: ignore[import-untyped]
         icon = tablerIcon(FilledIcon.HEART, size, color)
         surf.blit(icon, (cx - size // 2, cy - size // 2))
 

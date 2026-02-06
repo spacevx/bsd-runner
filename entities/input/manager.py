@@ -13,6 +13,7 @@ class InputSource(Enum):
 class GameAction(Enum):
     JUMP = auto()
     SLIDE = auto()
+    SHOOT = auto()
     RESTART = auto()
     MENU_UP = auto()
     MENU_DOWN = auto()

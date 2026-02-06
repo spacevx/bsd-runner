@@ -17,7 +17,8 @@ class ObstacleSpawner:
     minGapBetweenTypes: float = 2.0
 
     def __init__(self, screenSize: ScreenSize, groundY: int, scrollSpeed: float,
-                 obstacleMinDelay: float = 2.5, obstacleMaxDelay: float = 5.0) -> None:
+                 obstacleMinDelay: float = 2.5, obstacleMaxDelay: float = 5.0,
+                 bGeometricObstacles: bool = False) -> None:
         self.screenSize = screenSize
         self.scale = min(screenSize[0] / self.baseW, screenSize[1] / self.baseH)
         self.groundY = groundY
@@ -27,6 +28,7 @@ class ObstacleSpawner:
         self.obstacleSpawnDelay: float = 3.0
         self.lastBodyTime: float = 0.0
         self.lastCageTime: float = 0.0
+        self.bGeometricObstacles: bool = bGeometricObstacles
 
     def _s(self, val: int) -> int:
         return max(1, int(val * self.scale))
@@ -47,7 +49,24 @@ class ObstacleSpawner:
 
     def _spawnObstacle(self, obstacles: Group[Obstacle]) -> None:
         x = self.screenSize[0] + self._s(100)
-        obstacle = Obstacle(x, self.groundY, self.scale)
+
+        if self.bGeometricObstacles:
+            from entities.obstacle.geometric import GeometricObstacle
+            shapes = ["triangle", "square", "hexagon"]
+            colors = [(0, 255, 255), (255, 0, 255), (255, 255, 0), (0, 255, 100)]
+            shape = random.choice(shapes)
+            color = random.choice(colors)
+            heightTiers = [
+                self.groundY,
+                self.groundY - self._s(100),
+                self.groundY - self._s(200),
+                self.groundY - self._s(300),
+            ]
+            posY = random.choice(heightTiers)
+            obstacle = GeometricObstacle(x, self.groundY, self.scale, shape, color, posY=posY)
+        else:
+            obstacle = Obstacle(x, self.groundY, self.scale)
+
         obstacle.speed = self.scrollSpeed
         obstacles.add(obstacle)
 

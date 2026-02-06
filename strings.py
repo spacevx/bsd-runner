@@ -32,6 +32,7 @@ optionsPressButton: Final[str] = "APPUYEZ SUR UN BOUTON..."
 hudJump: Final[str] = "Sauter"
 hudSlide: Final[str] = "Glisser"
 hudDoubleJump: Final[str] = "Double Saut"
+hudShoot: Final[str] = "Tirer"
 instructionEsc: Final[str] = "Appuyez sur ÉCHAP pour revenir au menu"
 
 gameOver: Final[str] = "ATTRAPÉ!"

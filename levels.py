@@ -32,6 +32,11 @@ class LevelConfig:
     chaserFramesPath: Path
     bHasCeilingTiles: bool
     bHasGroundTiles: bool
+    bLaserEnabled: bool
+    laserCooldown: float
+    laserRange: float
+    bHasChaser: bool
+    bGeometricObstacles: bool
 
 
 level1Config = LevelConfig(
@@ -61,6 +66,11 @@ level1Config = LevelConfig(
     chaserFramesPath=assetsPath / "chaser" / "running" / "frames",
     bHasCeilingTiles=True,
     bHasGroundTiles=True,
+    bLaserEnabled=False,
+    laserCooldown=0.0,
+    laserRange=0.0,
+    bHasChaser=True,
+    bGeometricObstacles=False,
 )
 
 level2Config = LevelConfig(
@@ -90,6 +100,45 @@ level2Config = LevelConfig(
     chaserFramesPath=assetsPath / "chaser" / "running" / "frames",
     bHasCeilingTiles=False,
     bHasGroundTiles=True,
+    bLaserEnabled=False,
+    laserCooldown=0.0,
+    laserRange=0.0,
+    bHasChaser=True,
+    bGeometricObstacles=False,
 )
 
-levelConfigs: dict[int, LevelConfig] = {1: level1Config, 2: level2Config}
+level3Config = LevelConfig(
+    levelId=3,
+    name="NIVEAU 3",
+    gravity=1800.0,
+    jumpForce=-700.0,
+    bDoubleJump=False,
+    doubleJumpForce=0.0,
+    bSlideEnabled=True,
+    coyoteTime=0.08,
+    jumpBuffer=0.1,
+    scrollSpeed=600.0,
+    bSpeedGrowth=False,
+    speedGrowth=0.0,
+    maxSpeed=600.0,
+    obstacleMinDelay=0.7,
+    obstacleMaxDelay=1.7,
+    bFallingCages=False,
+    finaleScore=2000,
+    laneDodgeScore=50,
+    maxHits=3,
+    slowdownDuration=0.0,
+    slowdownMult=1.0,
+    obstacleDir=assetsPath / "geometric",
+    backgroundPath=assetsPath / "level3" / "background.png",
+    chaserFramesPath=assetsPath / "chaser" / "running" / "frames",
+    bHasCeilingTiles=False,
+    bHasGroundTiles=True,
+    bLaserEnabled=True,
+    laserCooldown=0.2,
+    laserRange=800.0,
+    bHasChaser=False,
+    bGeometricObstacles=True,
+)
+
+levelConfigs: dict[int, LevelConfig] = {1: level1Config, 2: level2Config, 3: level3Config}
