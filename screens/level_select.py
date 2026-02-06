@@ -4,8 +4,6 @@ import pygame
 from pygame import Surface
 from pygame.event import Event
 from pygame.font import Font
-from pytablericons import OutlineIcon, FilledIcon  # type: ignore[import-untyped]
-
 if TYPE_CHECKING:
     from entities.input.manager import InputEvent
 
@@ -13,31 +11,13 @@ import flags
 import settings
 from settings import GameState, ScreenSize, lastCompletedLevel
 from levels import levelConfigs
-from strings import (
-    levelSelectTitle, levelCompleted, levelLocked, levelAvailable,
-    levelTarget, optionsBack,
-)
+from strings import levelSelectTitle, levelTarget, optionsBack
 from screens.menu_bg import MenuBackground
-from screens.ui import ModernButton, _gradientRect, tablerIcon
+from pytablericons import OutlineIcon  # type: ignore[import-untyped]
+from screens.ui import Button, tablerIcon, drawGlowTitle
+from screens.ui.levelcard import buildLevelCard
 
-_cardTopAvail = (30, 32, 42)
-_cardBotAvail = (18, 20, 28)
-_cardBorderAvail = (170, 30, 40)
-_cardBorderHover = (235, 90, 100)
-
-_cardTopLocked = (22, 23, 28)
-_cardBotLocked = (15, 16, 20)
-_cardBorderLocked = (35, 37, 45)
-
-_cardTopCompleted = (25, 35, 30)
-_cardBotCompleted = (15, 22, 18)
-_cardBorderCompleted = (40, 150, 60)
-_cardBorderCompletedHover = (60, 200, 90)
-
-_textColor = (240, 240, 245)
-_dimText = (90, 92, 100)
 _goldColor = (255, 215, 0)
-_greenColor = (50, 220, 80)
 
 
 class LevelSelectScreen:
@@ -66,7 +46,7 @@ class LevelSelectScreen:
         self.infoFont: Font = Font(None, self._s(22))
         self.buttonFont: Font = Font(None, self._s(28))
 
-        self.backBtn: ModernButton = self._createBackButton()
+        self.backBtn: Button = self._createBackButton()
 
         self.levelIds: list[int] = sorted(levelConfigs.keys())
         self.cardRects: list[pygame.Rect] = []
@@ -91,11 +71,11 @@ class LevelSelectScreen:
     def _s(self, val: int) -> int:
         return max(1, int(val * self.scale))
 
-    def _createBackButton(self) -> ModernButton:
+    def _createBackButton(self) -> Button:
         w, h = self._s(220), self._s(55)
         x = (self.screenSize[0] - w) // 2
         y = int(self.screenSize[1] * 0.88)
-        return ModernButton(pygame.Rect(x, y, w, h), optionsBack, self.buttonFont)
+        return Button(pygame.Rect(x, y, w, h), optionsBack, self.buttonFont)
 
     def _computeLayout(self) -> None:
         screenW, screenH = self.screenSize
@@ -154,64 +134,15 @@ class LevelSelectScreen:
             return self._cachedCards[key]
 
         cfg = levelConfigs[levelId]
-        pageIds = self._pageIds()
-        idx = pageIds.index(levelId)
+        idx = self._pageIds().index(levelId)
         w, h = self.cardRects[idx].size
-        cr = self._s(12)
 
-        if state == "locked":
-            top, bot = _cardTopLocked, _cardBotLocked
-            border = _cardBorderLocked
-            textCol = _dimText
-        elif state == "completed":
-            top, bot = _cardTopCompleted, _cardBotCompleted
-            border = _cardBorderCompletedHover if bHighlight else _cardBorderCompleted
-            textCol = _textColor
-        else:
-            top, bot = _cardTopAvail, _cardBotAvail
-            border = _cardBorderHover if bHighlight else _cardBorderAvail
-            textCol = _textColor
-
-        surf = _gradientRect(w, h, top, bot, 220, cr)
-        bw = self._s(2) if bHighlight else 1
-        pygame.draw.rect(surf, border, (0, 0, w, h), bw, border_radius=cr)
-
-        if bHighlight and state != "locked":
-            glowSurf = Surface((w + 4, h + 4), pygame.SRCALPHA)
-            pygame.draw.rect(glowSurf, (*border, 25), (0, 0, w + 4, h + 4), border_radius=cr + 2)
-            surf.blit(glowSurf, (-2, -2))
-
-        cx = w // 2
-        y = self._s(30)
-
-        numText = str(levelId)
-        numSurf = self.numberFont.render(numText, True, textCol)
-        numShadow = self.numberFont.render(numText, True, (0, 0, 0))
-        surf.blit(numShadow, numShadow.get_rect(center=(cx + 2, y + 2)))
-        surf.blit(numSurf, numSurf.get_rect(center=(cx, y)))
-
-        y += self._s(38)
-        nameSurf = self.nameFont.render(cfg.name, True, textCol)
-        nameShadow = self.nameFont.render(cfg.name, True, (0, 0, 0))
-        surf.blit(nameShadow, nameShadow.get_rect(center=(cx + 1, y + 1)))
-        surf.blit(nameSurf, nameSurf.get_rect(center=(cx, y)))
-
-        y += self._s(34)
-        iconSize = self._s(28)
-        if state == "completed":
-            icon = tablerIcon(FilledIcon.CIRCLE_CHECK, iconSize, '#32DC50')
-        elif state == "locked":
-            icon = tablerIcon(OutlineIcon.LOCK, iconSize, '#5A5C64')
-        else:
-            icon = tablerIcon(OutlineIcon.PLAYER_PLAY, iconSize, '#EA5A64')
-        surf.blit(icon, icon.get_rect(center=(cx, y)))
-
-        y += self._s(30)
-        targetText = levelTarget.format(score=cfg.finaleScore)
-        targetCol = _dimText if state == "locked" else (180, 180, 190)
-        targetSurf = self.infoFont.render(targetText, True, targetCol)
-        surf.blit(targetSurf, targetSurf.get_rect(center=(cx, y)))
-
+        surf = buildLevelCard(
+            w, h, levelId, cfg.name, cfg.finaleScore,
+            state, bHighlight,
+            self.numberFont, self.nameFont, self.infoFont,
+            self.scale, levelTarget.format(score=cfg.finaleScore),
+        )
         self._cachedCards[key] = surf
         return surf
 
@@ -348,18 +279,9 @@ class LevelSelectScreen:
         ty = int(self.screenSize[1] * 0.15)
         text = levelSelectTitle
 
-        for offset in range(self._s(12), 0, -2):
-            alpha = int(50 * (1 - offset / self._s(12)))
-            glow = self.titleFont.render(text, True, (180, 150, 0))
-            glow.set_alpha(alpha)
-            for dx, dy in [(-offset, 0), (offset, 0), (0, -offset), (0, offset)]:
-                screen.blit(glow, glow.get_rect(center=(cx + dx, ty + dy)))
-
-        shadow = self.titleFont.render(text, True, (0, 0, 0))
-        screen.blit(shadow, shadow.get_rect(center=(cx + self._s(3), ty + self._s(3))))
-
-        titleSurf = self.titleFont.render(text, True, _goldColor)
-        screen.blit(titleSurf, titleSurf.get_rect(center=(cx, ty)))
+        drawGlowTitle(screen, text, self.titleFont, cx, ty,
+                      _goldColor, (180, 150, 0), (0, 0, 0),
+                      self._s(12), peakAlpha=50, shadowOffset=self._s(3))
 
     def _drawChevrons(self, screen: Surface) -> None:
         if self.totalPages <= 1:

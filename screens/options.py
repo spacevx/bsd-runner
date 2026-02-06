@@ -19,7 +19,7 @@ from strings import (
 )
 from levels import levelConfigs, level1Config
 from screens.menu_bg import MenuBackground
-from screens.ui import ModernButton
+from screens.ui import Button, drawGlowTitle, drawSectionHeader
 
 _bindingDefs: list[tuple[str, str]] = [
     (optionsJump, "jump"),
@@ -56,8 +56,8 @@ class OptionsScreen:
         self._soundToggleRect: pygame.Rect = pygame.Rect(0, 0, 0, 0)
         self._soundHovered: bool = False
 
-        self.resetBtn: ModernButton
-        self.backBtn: ModernButton
+        self.resetBtn: Button
+        self.backBtn: Button
 
         self._loadKeyIcons()
         self._computeLayout()
@@ -154,8 +154,8 @@ class OptionsScreen:
 
     def _createActionButtons(self) -> None:
         resetRect, backRect = self._getActionButtonRects()
-        self.resetBtn = ModernButton(resetRect, optionsReset, self.buttonFont)
-        self.backBtn = ModernButton(backRect, optionsBack, self.buttonFont)
+        self.resetBtn = Button(resetRect, optionsReset, self.buttonFont)
+        self.backBtn = Button(backRect, optionsBack, self.buttonFont)
 
     def _updateButtonPositions(self) -> None:
         self._computeLayout()
@@ -179,21 +179,9 @@ class OptionsScreen:
         text = optionsTitle
         pulse = 0.9 + 0.1 * math.sin(self.titlePulse)
 
-        for offset in range(self._s(15), 0, -2):
-            alpha = int(60 * (1 - offset / self._s(15)) * pulse)
-            glowSurf = self.titleFont.render(text, True, (139, 0, 0))
-            glowSurf.set_alpha(alpha)
-            for dx, dy in [(-offset, 0), (offset, 0), (0, -offset), (0, offset)]:
-                rect = glowSurf.get_rect(center=(cx + dx, ty + dy))
-                surf.blit(glowSurf, rect)
-
-        shadow = self.titleFont.render(text, True, (20, 0, 0))
-        shadowRect = shadow.get_rect(center=(cx + self._s(4), ty + self._s(4)))
-        surf.blit(shadow, shadowRect)
-
-        titleSurf = self.titleFont.render(text, True, (220, 220, 230))
-        titleRect = titleSurf.get_rect(center=(cx, ty))
-        surf.blit(titleSurf, titleRect)
+        drawGlowTitle(surf, text, self.titleFont, cx, ty,
+                      (220, 220, 230), (139, 0, 0), (20, 0, 0),
+                      self._s(15), shadowOffset=self._s(4), pulse=pulse)
 
     def _drawControlsPanel(self, surf: Surface) -> None:
         w = self.screenSize[0]
@@ -206,14 +194,7 @@ class OptionsScreen:
         surf.blit(self.panelSurf, (self._panelX, self._panelY))
 
         sectionY = self._panelY + self._s(30)
-        glowSurf = self.sectionFont.render(optionsControls, True, (255, 215, 0))
-        glowSurf.set_alpha(40)
-        for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
-            rect = glowSurf.get_rect(center=(cx + dx, sectionY + dy))
-            surf.blit(glowSurf, rect)
-        sectionSurf = self.sectionFont.render(optionsControls, True, (255, 215, 0))
-        sectionRect = sectionSurf.get_rect(center=(cx, sectionY))
-        surf.blit(sectionSurf, sectionRect)
+        drawSectionHeader(surf, optionsControls, self.sectionFont, cx, sectionY)
 
         for i, (label, attr) in enumerate(_bindingDefs):
             rowCY = self._rowCentersY[i]
@@ -248,14 +229,7 @@ class OptionsScreen:
         surf.blit(self._soundPanelSurf, (self._soundPanelX, self._soundPanelY))
 
         sectionY = self._soundPanelY + self._s(25)
-        glowSurf = self.sectionFont.render(optionsSound, True, (255, 215, 0))
-        glowSurf.set_alpha(40)
-        for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
-            rect = glowSurf.get_rect(center=(cx + dx, sectionY + dy))
-            surf.blit(glowSurf, rect)
-        sectionSurf = self.sectionFont.render(optionsSound, True, (255, 215, 0))
-        sectionRect = sectionSurf.get_rect(center=(cx, sectionY))
-        surf.blit(sectionSurf, sectionRect)
+        drawSectionHeader(surf, optionsSound, self.sectionFont, cx, sectionY)
 
         labelSurf = self.labelFont.render(optionsSound, True, (240, 240, 245))
         labelRect = labelSurf.get_rect(midleft=(self._soundLabelX, self._soundRowCY))

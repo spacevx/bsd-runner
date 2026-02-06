@@ -1,3 +1,6 @@
+# Flags allow us to run the game with specific things, example a flag to disable the chaser
+# Or a flag to directly unlock all levels
+
 import sys
 
 bDisableChaser: bool = False

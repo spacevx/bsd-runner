@@ -13,7 +13,7 @@ from settings import width, height, GameState, ScreenSize, lastCompletedLevel
 from strings import btnPlay, btnOptions, btnQuit
 from levels import levelConfigs
 from screens.menu_bg import MenuBackground
-from screens.ui import ModernButton
+from screens.ui import Button, drawGlowTitle
 
 
 class MainMenu:
@@ -34,9 +34,9 @@ class MainMenu:
         )
 
         self.buttonFont: Font = pygame.font.Font(None, self._s(28))
-        self.playBtn: ModernButton
-        self.optionsBtn: ModernButton
-        self.quitBtn: ModernButton
+        self.playBtn: Button
+        self.optionsBtn: Button
+        self.quitBtn: Button
         self._createButtons()
 
         self.titleFont: Font = pygame.font.Font(None, self._s(160))
@@ -45,7 +45,7 @@ class MainMenu:
         self.titlePulse: float = 0.0
 
         self.focusedButtonIndex: int = 0
-        self.buttons: list[ModernButton] = []
+        self.buttons: list[Button] = []
         self.bJoystickNavMode: bool = False
         self._updateButtonsList()
 
@@ -91,9 +91,9 @@ class MainMenu:
 
     def _createButtons(self) -> None:
         rects = self._getButtonRects()
-        self.playBtn = ModernButton(rects[0], btnPlay, self.buttonFont, variant="primary")
-        self.optionsBtn = ModernButton(rects[1], btnOptions, self.buttonFont)
-        self.quitBtn = ModernButton(rects[2], btnQuit, self.buttonFont)
+        self.playBtn = Button(rects[0], btnPlay, self.buttonFont, variant="primary")
+        self.optionsBtn = Button(rects[1], btnOptions, self.buttonFont)
+        self.quitBtn = Button(rects[2], btnQuit, self.buttonFont)
         self._updateButtonsList()
 
     def _updateButtonPositions(self) -> None:
@@ -108,21 +108,12 @@ class MainMenu:
         text = "BSD Runner"
         pulse = 0.9 + 0.1 * math.sin(self.titlePulse)
 
-        for offset in range(self._s(20), 0, -2):
-            alpha = int(80 * (1 - offset / self._s(20)) * pulse)
-            glowSurf = self.titleFont.render(text, True, (139, 0, 0))
-            glowSurf.set_alpha(alpha)
-            for dx, dy in [(-offset, 0), (offset, 0), (0, -offset), (0, offset)]:
-                rect = glowSurf.get_rect(center=(cx + dx, ty + dy))
-                surf.blit(glowSurf, rect)
-
-        shadow = self.titleFont.render(text, True, (20, 0, 0))
-        shadowRect = shadow.get_rect(center=(cx + self._s(5), ty + self._s(5)))
-        surf.blit(shadow, shadowRect)
+        drawGlowTitle(surf, text, self.titleFont, cx, ty,
+                      (180, 180, 190), (139, 0, 0), (20, 0, 0),
+                      self._s(20), peakAlpha=80, shadowOffset=self._s(5), pulse=pulse)
 
         base = self.titleFont.render(text, True, (180, 180, 190))
         baseRect = base.get_rect(center=(cx, ty))
-        surf.blit(base, baseRect)
 
         gradientSurf = pygame.Surface(base.get_size(), pygame.SRCALPHA)
         tw, th = base.get_size()

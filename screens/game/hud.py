@@ -8,8 +8,11 @@ from strings import (
     gameOver, gameRestartKey, gameRestartButton, hudJump, hudSlide, hudDoubleJump,
     levelComplete, levelCompleteRestart, gameOverMenuKey, gameOverMenuButton
 )
-from screens.ui import _gradientRect, tablerIcon, drawTextWithShadow, glassPanel
+from screens.ui import _gradientRect, tablerIcon, drawTextWithShadow, glassPanel, drawGlowTitle
+from screens.ui.controls import ControlHint, buildControlsPanel
 from screens.ui.ecg import EcgMonitor
+from screens.ui.score import ScoreDisplay
+from screens.ui.hitcounter import HitCounter
 
 
 class HUD:
@@ -32,19 +35,12 @@ class HUD:
         self.inputManager = InputManager()
         self.joyIcons = JoyIcons()
 
-        self.displayScore: float = 0.0
-
-        self._cachedScoreVal: int = -1
-        self._cachedScoreSurf: Surface | None = None
-        self._cachedScoreBoxSurf: Surface | None = None
+        self._scoreDisplay = ScoreDisplay(self.scale)
+        self._hitCounter = HitCounter(self.scale)
 
         self._controlsSurf: Surface | None = None
         self._controlsInputSource: object = None
         self._controlsScreenSize: ScreenSize | None = None
-
-        self._cachedHits: int = -1
-        self._cachedMaxHits: int = -1
-        self._cachedHitSurf: Surface | None = None
 
         self._gameOverSurf: Surface | None = None
         self._gameOverScore: int = -1
@@ -61,12 +57,6 @@ class HUD:
     def _glassPanel(self, w: int, h: int) -> Surface:
         return glassPanel(w, h, self.scale)
 
-    def _drawHeart(self, surf: Surface, cx: int, cy: int, size: int,
-                   color: str) -> None:
-        from pytablericons import FilledIcon  # type: ignore[import-untyped]
-        icon = tablerIcon(FilledIcon.HEART, size, color)
-        surf.blit(icon, (cx - size // 2, cy - size // 2))
-
     def _createFonts(self) -> None:
         self.font: Font = pygame.font.Font(None, self._s(96))
         self.smallFont: Font = pygame.font.Font(None, self._s(42))
@@ -77,18 +67,14 @@ class HUD:
         self.scale = min(newSize[0] / self.baseW, newSize[1] / self.baseH)
         self._createFonts()
         self._ecg.onResize(self.scale)
+        self._scoreDisplay.onResize(self.scale)
+        self._hitCounter.onResize(self.scale)
         self._invalidateAll()
 
     def _invalidateAll(self) -> None:
-        self._cachedScoreVal = -1
-        self._cachedScoreSurf = None
-        self._cachedScoreBoxSurf = None
         self._controlsSurf = None
         self._controlsInputSource = None
         self._controlsScreenSize = None
-        self._cachedHits = -1
-        self._cachedMaxHits = -1
-        self._cachedHitSurf = None
         self._gameOverSurf = None
         self._gameOverScore = -1
         self._gameOverInputSource = None
@@ -97,7 +83,7 @@ class HUD:
         self._levelCompleteInputSource = None
 
     def resetGameOverCache(self) -> None:
-        self.displayScore = 0.0
+        self._scoreDisplay.reset()
         self._gameOverSurf = None
         self._gameOverScore = -1
         self._gameOverInputSource = None
@@ -106,42 +92,10 @@ class HUD:
         self._levelCompleteScore = -1
         self._levelCompleteInputSource = None
 
-    def _drawTextWithShadow(self, screen: Surface, text: str, font: Font,
-                            color: tuple[int, int, int], pos: tuple[int, int],
-                            shadowOffset: int = 2) -> None:
-        drawTextWithShadow(screen, text, font, color, pos, shadowOffset)
-
-    def _drawTextWithShadowOnSurf(self, target: Surface, text: str, font: Font,
-                                  color: tuple[int, int, int], pos: tuple[int, int],
-                                  shadowOffset: int = 2) -> None:
-        drawTextWithShadow(target, text, font, color, pos, shadowOffset)
-
     def drawScore(self, screen: Surface, score: int, dt: float) -> None:
-        scoreX, scoreY = self._s(30), self._s(25)
-
-        if self._cachedScoreBoxSurf is None:
-            boxW = self._s(260)
-            boxH = self._s(56)
-            self._cachedScoreBoxSurf = self._glassPanel(boxW, boxH)
-
-        screen.blit(self._cachedScoreBoxSurf, (scoreX - self._s(10), scoreY - self._s(10)))
-
-        t = min(1.0, 1.0 - 0.04 ** dt)
-        self.displayScore = pygame.math.lerp(self.displayScore, float(score), t)
-        if abs(self.displayScore - score) < 1.0:
-            self.displayScore = float(score)
-        shown = int(self.displayScore)
-
-        if shown != self._cachedScoreVal:
-            self._cachedScoreVal = shown
-            scoreText = f"Score: {shown}"
-            boxW = self._cachedScoreBoxSurf.get_width()
-            boxH = self._cachedScoreBoxSurf.get_height()
-            self._cachedScoreSurf = pygame.Surface((boxW, boxH), pygame.SRCALPHA)
-            self._drawTextWithShadowOnSurf(self._cachedScoreSurf, scoreText, self.scoreFont, (240, 240, 245), (self._s(10), self._s(10)), self._s(2))
-
-        if self._cachedScoreSurf:
-            screen.blit(self._cachedScoreSurf, (scoreX - self._s(10), scoreY - self._s(10)))
+        x = self._s(30) - self._s(10)
+        y = self._s(25) - self._s(10)
+        self._scoreDisplay.draw(screen, x, y, score, dt, self.scoreFont)
 
     def drawControls(self, screen: Surface) -> None:
         from entities.input.manager import InputSource
@@ -158,154 +112,43 @@ class HUD:
         self._controlsInputSource = curSource
         self._controlsScreenSize = self.screenSize
 
+        iconSize = self._s(36)
         if curSource == InputSource.JOYSTICK:
-            self._buildJoystickControlsSurf()
+            hints = self._joystickHints(iconSize)
         else:
-            self._buildKeyboardControlsSurf()
+            hints = self._keyboardHints(iconSize)
+
+        self._controlsSurf = buildControlsPanel(hints, self.smallFont, self.scale)
 
         ctrlX = self._s(30)
         ctrlY = self.screenSize[1] - self._s(55)
-        if self._controlsSurf:
-            screen.blit(self._controlsSurf, (ctrlX - self._s(10), ctrlY - self._s(5)))
+        screen.blit(self._controlsSurf, (ctrlX - self._s(10), ctrlY - self._s(5)))
 
-    def _buildKeyboardControlsSurf(self) -> None:
-        iconSize = self._s(36)
-        textColor = (240, 240, 245)
-
+    def _keyboardHints(self, iconSize: int) -> list[ControlHint]:
         jumpIcon = keyBindings.getKeyIcon(keyBindings.jump, iconSize)
-
         if self.bDoubleJump and not self.bSlideEnabled:
-            jumpLabel = self.smallFont.render(hudDoubleJump, True, textColor)
-            totalW = iconSize + self._s(8) + jumpLabel.get_width()
-            boxH = iconSize + self._s(10)
-            bgSurf = self._glassPanel(totalW + self._s(20), boxH)
-            x = self._s(10)
-            centerY = boxH // 2
-            if jumpIcon:
-                bgSurf.blit(jumpIcon, (x, centerY - iconSize // 2))
-                x += iconSize + self._s(8)
-            else:
-                fallback = self.smallFont.render(keyBindings.getKeyName(keyBindings.jump), True, textColor)
-                bgSurf.blit(fallback, (x, centerY - fallback.get_height() // 2))
-                x += fallback.get_width() + self._s(8)
-            bgSurf.blit(jumpLabel, (x, centerY - jumpLabel.get_height() // 2))
-            self._controlsSurf = bgSurf
-            return
-
+            return [ControlHint(jumpIcon, keyBindings.getKeyName(keyBindings.jump), hudDoubleJump)]
         slideIcon = keyBindings.getKeyIcon(keyBindings.slide, iconSize)
+        return [
+            ControlHint(jumpIcon, keyBindings.getKeyName(keyBindings.jump), hudJump),
+            ControlHint(slideIcon, keyBindings.getKeyName(keyBindings.slide), hudSlide),
+        ]
 
-        jumpLabel = self.smallFont.render(hudJump, True, textColor)
-        slideLabel = self.smallFont.render(hudSlide, True, textColor)
-        separator = self.smallFont.render("|", True, (80, 82, 95))
-
-        totalW = iconSize + self._s(8) + jumpLabel.get_width() + self._s(20)
-        totalW += separator.get_width() + self._s(20)
-        totalW += iconSize + self._s(8) + slideLabel.get_width()
-        boxH = iconSize + self._s(10)
-
-        bgSurf = self._glassPanel(totalW + self._s(20), boxH)
-
-        x = self._s(10)
-        centerY = boxH // 2
-
-        if jumpIcon:
-            bgSurf.blit(jumpIcon, (x, centerY - iconSize // 2))
-            x += iconSize + self._s(8)
-        else:
-            fallback = self.smallFont.render(keyBindings.getKeyName(keyBindings.jump), True, textColor)
-            bgSurf.blit(fallback, (x, centerY - fallback.get_height() // 2))
-            x += fallback.get_width() + self._s(8)
-
-        bgSurf.blit(jumpLabel, (x, centerY - jumpLabel.get_height() // 2))
-        x += jumpLabel.get_width() + self._s(20)
-
-        bgSurf.blit(separator, (x, centerY - separator.get_height() // 2))
-        x += separator.get_width() + self._s(20)
-
-        if slideIcon:
-            bgSurf.blit(slideIcon, (x, centerY - iconSize // 2))
-            x += iconSize + self._s(8)
-        else:
-            fallback = self.smallFont.render(keyBindings.getKeyName(keyBindings.slide), True, textColor)
-            bgSurf.blit(fallback, (x, centerY - fallback.get_height() // 2))
-            x += fallback.get_width() + self._s(8)
-
-        bgSurf.blit(slideLabel, (x, centerY - slideLabel.get_height() // 2))
-
-        self._controlsSurf = bgSurf
-
-    def _buildJoystickControlsSurf(self) -> None:
+    def _joystickHints(self, iconSize: int) -> list[ControlHint]:
         from entities.input.joybindings import JoyBindings
         from entities.input.manager import GameAction
 
         jb = JoyBindings()
-        iconSize = self._s(36)
-        textColor = (240, 240, 245)
-
         jumpBtn = jb.getButtonForAction(GameAction.JUMP)
-
+        jumpIcon = self.joyIcons.renderButtonIcon(jumpBtn, (iconSize, iconSize)) if jumpBtn is not None else None
         if self.bDoubleJump and not self.bSlideEnabled:
-            jumpLabel = self.smallFont.render(hudDoubleJump, True, textColor)
-            totalW = iconSize + self._s(8) + jumpLabel.get_width()
-            boxH = iconSize + self._s(10)
-            bgSurf = self._glassPanel(totalW + self._s(20), boxH)
-            x = self._s(10)
-            centerY = boxH // 2
-            if jumpBtn is not None:
-                jumpIcon = self.joyIcons.renderButtonIcon(jumpBtn, (iconSize, iconSize))
-                bgSurf.blit(jumpIcon, (x, centerY - iconSize // 2))
-                x += iconSize + self._s(8)
-            else:
-                fallback = self.smallFont.render("?", True, textColor)
-                bgSurf.blit(fallback, (x, centerY - fallback.get_height() // 2))
-                x += fallback.get_width() + self._s(8)
-            bgSurf.blit(jumpLabel, (x, centerY - jumpLabel.get_height() // 2))
-            self._controlsSurf = bgSurf
-            return
-
+            return [ControlHint(jumpIcon, "?", hudDoubleJump)]
         slideBtn = jb.getButtonForAction(GameAction.SLIDE)
-
-        jumpLabel = self.smallFont.render(hudJump, True, textColor)
-        slideLabel = self.smallFont.render(hudSlide, True, textColor)
-        separator = self.smallFont.render("|", True, (80, 82, 95))
-
-        totalW = iconSize + self._s(8) + jumpLabel.get_width() + self._s(20)
-        totalW += separator.get_width() + self._s(20)
-        totalW += iconSize + self._s(8) + slideLabel.get_width()
-        boxH = iconSize + self._s(10)
-
-        bgSurf = self._glassPanel(totalW + self._s(20), boxH)
-
-        x = self._s(10)
-        centerY = boxH // 2
-
-        if jumpBtn is not None:
-            jumpIcon = self.joyIcons.renderButtonIcon(jumpBtn, (iconSize, iconSize))
-            bgSurf.blit(jumpIcon, (x, centerY - iconSize // 2))
-            x += iconSize + self._s(8)
-        else:
-            fallback = self.smallFont.render("?", True, textColor)
-            bgSurf.blit(fallback, (x, centerY - fallback.get_height() // 2))
-            x += fallback.get_width() + self._s(8)
-
-        bgSurf.blit(jumpLabel, (x, centerY - jumpLabel.get_height() // 2))
-        x += jumpLabel.get_width() + self._s(20)
-
-        bgSurf.blit(separator, (x, centerY - separator.get_height() // 2))
-        x += separator.get_width() + self._s(20)
-
-        if slideBtn is not None:
-            slideIcon = self.joyIcons.renderButtonIcon(slideBtn, (iconSize, iconSize))
-            bgSurf.blit(slideIcon, (x, centerY - iconSize // 2))
-            x += iconSize + self._s(8)
-        else:
-            fallback = self.smallFont.render("?", True, textColor)
-            bgSurf.blit(fallback, (x, centerY - fallback.get_height() // 2))
-            x += fallback.get_width() + self._s(8)
-
-        bgSurf.blit(slideLabel, (x, centerY - slideLabel.get_height() // 2))
-
-        self._controlsSurf = bgSurf
+        slideIcon = self.joyIcons.renderButtonIcon(slideBtn, (iconSize, iconSize)) if slideBtn is not None else None
+        return [
+            ControlHint(jumpIcon, "?", hudJump),
+            ControlHint(slideIcon, "?", hudSlide),
+        ]
 
     def drawGameOver(self, screen: Surface, score: int) -> None:
         from entities.input.manager import InputSource, GameAction
@@ -348,21 +191,10 @@ class HUD:
             surf.blit(panel, (panelX, panelY))
 
             titleY = panelY + self._s(45)
+            drawGlowTitle(surf, gameOver, self.font, cx, titleY,
+                          (255, 55, 55), (160, 0, 0), (40, 0, 0),
+                          self._s(12), peakAlpha=50, shadowOffset=self._s(3), bDiagonal=True)
             titleSurf = self.font.render(gameOver, True, (255, 55, 55))
-            titleRect = titleSurf.get_rect(center=(cx, titleY))
-
-            maxGlow = self._s(12)
-            for offset in range(maxGlow, 0, -2):
-                glow = self.font.render(gameOver, True, (160, 0, 0))
-                glow.set_alpha(int(50 * (1 - offset / maxGlow)))
-                for dx, dy in [(-offset, 0), (offset, 0), (0, -offset), (0, offset),
-                               (-offset // 2, -offset // 2), (offset // 2, -offset // 2),
-                               (-offset // 2, offset // 2), (offset // 2, offset // 2)]:
-                    surf.blit(glow, titleSurf.get_rect(center=(cx + dx, titleY + dy)))
-
-            shadow = self.font.render(gameOver, True, (40, 0, 0))
-            surf.blit(shadow, titleSurf.get_rect(center=(cx + self._s(3), titleY + self._s(3))))
-            surf.blit(titleSurf, titleRect)
 
             divY = titleY + titleSurf.get_height() // 2 + self._s(22)
             divW = panelW - self._s(80)
@@ -431,35 +263,9 @@ class HUD:
         self._ecg.draw(screen, ecgX, ecgY, ecgW, ecgH)
 
     def drawHitCounter(self, screen: Surface, hitCount: int, maxHits: int) -> None:
-        if hitCount == self._cachedHits and maxHits == self._cachedMaxHits and self._cachedHitSurf is not None:
-            x = self.screenSize[0] - self._s(195)
-            y = self._s(25)
-            screen.blit(self._cachedHitSurf, (x - self._s(10), y - self._s(10)))
-            return
-
-        self._cachedHits = hitCount
-        self._cachedMaxHits = maxHits
-
-        boxW = self._s(170)
-        boxH = self._s(56)
-        hitSurf = self._glassPanel(boxW, boxH)
-
-        heartSize = self._s(28)
-        spacing = self._s(42)
-        totalHeartsW = (maxHits - 1) * spacing + heartSize
-        startX = (boxW - totalHeartsW) // 2 + heartSize // 2
-        centerY = boxH // 2
-
-        for i in range(maxHits):
-            cx = startX + i * spacing
-            color = '#32343F' if i < hitCount else '#DC3232'
-            self._drawHeart(hitSurf, cx, centerY, heartSize, color)
-
-        self._cachedHitSurf = hitSurf
-
-        x = self.screenSize[0] - self._s(195)
-        y = self._s(25)
-        screen.blit(self._cachedHitSurf, (x - self._s(10), y - self._s(10)))
+        x = self.screenSize[0] - self._s(195) - self._s(10)
+        y = self._s(25) - self._s(10)
+        self._hitCounter.draw(screen, x, y, hitCount, maxHits)
 
     def drawLevelComplete(self, screen: Surface, score: int) -> None:
         from entities.input.manager import InputSource, GameAction
@@ -495,18 +301,9 @@ class HUD:
         surf.blit(panel, (cx - panelW // 2, cy - panelH // 2))
 
         titleY = cy - self._s(100)
-        titleSurf = self.font.render(levelComplete, True, green)
-        titleRect = titleSurf.get_rect(center=(cx, titleY))
-
-        for offset in range(self._s(15), 0, -2):
-            glow = self.font.render(levelComplete, True, darkGreen)
-            glow.set_alpha(int(60 * (1 - offset / self._s(15))))
-            for dx, dy in [(-offset, 0), (offset, 0), (0, -offset), (0, offset)]:
-                surf.blit(glow, titleSurf.get_rect(center=(cx + dx, titleY + dy)))
-
-        shadow = self.font.render(levelComplete, True, (0, 50, 20))
-        surf.blit(shadow, titleSurf.get_rect(center=(cx + self._s(4), titleY + self._s(4))))
-        surf.blit(titleSurf, titleRect)
+        drawGlowTitle(surf, levelComplete, self.font, cx, titleY,
+                      green, darkGreen, (0, 50, 20),
+                      self._s(15), shadowOffset=self._s(4))
 
         scoreText = f"Score Final: {score}"
         scoreSurf = self.scoreFont.render(scoreText, True, gold)

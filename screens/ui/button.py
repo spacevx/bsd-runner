@@ -40,7 +40,7 @@ _cornerR = 10
 _shadowOff = 3
 
 
-class ModernButton:
+class Button:
     def __init__(
         self,
         rect: Rect,
