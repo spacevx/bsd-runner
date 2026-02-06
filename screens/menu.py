@@ -9,10 +9,8 @@ from pygame.font import Font
 if TYPE_CHECKING:
     from entities.input.manager import InputEvent
 
-import flags
-import settings
 from settings import width, height, GameState, ScreenSize
-from strings import btnLevel1, btnLevel2, btnLevel2Locked, btnOptions, btnQuit
+from strings import btnPlay, btnOptions, btnQuit
 from screens.menu_bg import MenuBackground
 from screens.ui import ModernButton
 
@@ -21,18 +19,15 @@ class MainMenu:
     baseW: int = 1920
     baseH: int = 1080
 
-    def __init__(self, setStateCallback: Callable[[GameState], None],
-                 startLevelCallback: Callable[[int], None]) -> None:
+    def __init__(self, setStateCallback: Callable[[GameState], None]) -> None:
         self.setState: Callable[[GameState], None] = setStateCallback
-        self.startLevel: Callable[[int], None] = startLevelCallback
         self.screenSize: ScreenSize = (width, height)
         self.scale: float = min(width / self.baseW, height / self.baseH)
 
         self.menuBg = MenuBackground(self.screenSize)
 
         self.buttonFont: Font = pygame.font.Font(None, self._s(28))
-        self.level1Btn: ModernButton
-        self.level2Btn: ModernButton
+        self.playBtn: ModernButton
         self.optionsBtn: ModernButton
         self.quitBtn: ModernButton
         self._createButtons()
@@ -51,7 +46,7 @@ class MainMenu:
         return max(1, int(val * self.scale))
 
     def _updateButtonsList(self) -> None:
-        self.buttons = [self.level1Btn, self.level2Btn, self.optionsBtn, self.quitBtn]
+        self.buttons = [self.playBtn, self.optionsBtn, self.quitBtn]
 
     def _navigateMenu(self, direction: int) -> None:
         self.focusedButtonIndex = (self.focusedButtonIndex + direction) % len(self.buttons)
@@ -69,10 +64,8 @@ class MainMenu:
         if not self.bJoystickNavMode or not self.buttons:
             return
         focusedBtn = self.buttons[self.focusedButtonIndex]
-        if focusedBtn == self.level1Btn:
-            self.startLevel(1)
-        elif focusedBtn == self.level2Btn and not self.level2Btn.bDisabled:
-            self.startLevel(2)
+        if focusedBtn == self.playBtn:
+            self.setState(GameState.LEVEL_SELECT)
         elif focusedBtn == self.optionsBtn:
             self.setState(GameState.OPTIONS)
         elif focusedBtn == self.quitBtn:
@@ -81,33 +74,24 @@ class MainMenu:
     def _getButtonRects(self) -> list[pygame.Rect]:
         w, h = self._s(420), self._s(65)
         cx = (self.screenSize[0] - w) // 2
-        baseY = int(self.screenSize[1] * 0.48)
-        gap = self._s(80)
+        baseY = int(self.screenSize[1] * 0.58)
+        gap = self._s(90)
         return [
             pygame.Rect(cx, baseY, w, h),
             pygame.Rect(cx, baseY + gap, w, h),
             pygame.Rect(cx, baseY + gap * 2, w, h),
-            pygame.Rect(cx, baseY + gap * 3, w, h),
         ]
 
     def _createButtons(self) -> None:
         rects = self._getButtonRects()
-        self.level1Btn = ModernButton(rects[0], btnLevel1, self.buttonFont, variant="primary")
-        bLocked = not settings.bLevel2Unlocked and not flags.bUnlockAllLevels
-        self.level2Btn = ModernButton(rects[1], btnLevel2Locked if bLocked else btnLevel2, self.buttonFont)
-        self.level2Btn.setDisabled(bLocked)
-        self.optionsBtn = ModernButton(rects[2], btnOptions, self.buttonFont)
-        self.quitBtn = ModernButton(rects[3], btnQuit, self.buttonFont)
+        self.playBtn = ModernButton(rects[0], btnPlay, self.buttonFont, variant="primary")
+        self.optionsBtn = ModernButton(rects[1], btnOptions, self.buttonFont)
+        self.quitBtn = ModernButton(rects[2], btnQuit, self.buttonFont)
         self._updateButtonsList()
-
-    def _refreshLevel2State(self) -> None:
-        bLocked = not settings.bLevel2Unlocked and not flags.bUnlockAllLevels
-        self.level2Btn.setText(btnLevel2Locked if bLocked else btnLevel2)
-        self.level2Btn.setDisabled(bLocked)
 
     def _updateButtonPositions(self) -> None:
         rects = self._getButtonRects()
-        for btn, rect in zip([self.level1Btn, self.level2Btn, self.optionsBtn, self.quitBtn], rects):
+        for btn, rect in zip([self.playBtn, self.optionsBtn, self.quitBtn], rects):
             btn.setPosition(rect.x, rect.y)
             btn.setDimensions(rect.width, rect.height)
 
@@ -165,7 +149,7 @@ class MainMenu:
         self.screenSize = newSize
         self.scale = min(newSize[0] / self.baseW, newSize[1] / self.baseH)
         self.buttonFont = pygame.font.Font(None, self._s(28))
-        for btn in [self.level1Btn, self.level2Btn, self.optionsBtn, self.quitBtn]:
+        for btn in [self.playBtn, self.optionsBtn, self.quitBtn]:
             btn.setFont(self.buttonFont)
         self.menuBg.onResize(newSize)
         self._updateButtonPositions()
@@ -173,8 +157,6 @@ class MainMenu:
 
     def handleEvent(self, event: Event, inputEvent: "InputEvent | None" = None) -> None:
         from entities.input.manager import InputEvent, GameAction, InputSource
-
-        self._refreshLevel2State()
 
         if event.type == pygame.MOUSEMOTION:
             self.bJoystickNavMode = False
@@ -190,13 +172,9 @@ class MainMenu:
                 self._navigateMenu(-1)
             elif inputEvent.action in (GameAction.MENU_CONFIRM, GameAction.JUMP) and inputEvent.bPressed:
                 self._activateFocusedButton()
-            elif inputEvent.action in (GameAction.MENU_BACK, GameAction.SLIDE) and inputEvent.bPressed:
-                self.setState(GameState.MENU)
 
-        if self.level1Btn.handleEvent(event):
-            self.startLevel(1)
-        elif self.level2Btn.handleEvent(event):
-            self.startLevel(2)
+        if self.playBtn.handleEvent(event):
+            self.setState(GameState.LEVEL_SELECT)
         elif self.optionsBtn.handleEvent(event):
             self.setState(GameState.OPTIONS)
         elif self.quitBtn.handleEvent(event):
@@ -210,7 +188,6 @@ class MainMenu:
     def draw(self, screen: Surface) -> None:
         self.menuBg.draw(screen)
         self._drawTitle(screen)
-        self.level1Btn.draw(screen)
-        self.level2Btn.draw(screen)
+        self.playBtn.draw(screen)
         self.optionsBtn.draw(screen)
         self.quitBtn.draw(screen)

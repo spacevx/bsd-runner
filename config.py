@@ -24,8 +24,19 @@ def load() -> None:
     import settings
     if "bSoundEnabled" in data:
         settings.bSoundEnabled = data["bSoundEnabled"]
-    if "bLevel2Unlocked" in data:
-        settings.bLevel2Unlocked = data["bLevel2Unlocked"]
+
+    if "levelCompleted" in data:
+        settings.levelCompleted = {int(k): v for k, v in data["levelCompleted"].items()}
+    if "levelUnlocked" in data:
+        settings.levelUnlocked = {int(k): v for k, v in data["levelUnlocked"].items()}
+        settings.levelUnlocked[1] = True
+
+    if "bLevel1Completed" in data and data["bLevel1Completed"]:
+        settings.levelCompleted[1] = True
+    if "bLevel2Completed" in data and data["bLevel2Completed"]:
+        settings.levelCompleted[2] = True
+    if "bLevel2Unlocked" in data and data["bLevel2Unlocked"]:
+        settings.levelUnlocked[2] = True
 
 
 def save() -> None:
@@ -39,7 +50,8 @@ def save() -> None:
             "restart": keyBindings.restart,
         },
         "bSoundEnabled": settings.bSoundEnabled,
-        "bLevel2Unlocked": settings.bLevel2Unlocked,
+        "levelCompleted": {str(k): v for k, v in settings.levelCompleted.items()},
+        "levelUnlocked": {str(k): v for k, v in settings.levelUnlocked.items()},
     }
     with open(configFile, "w") as f:
         json.dump(data, f, indent=2)

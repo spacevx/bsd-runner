@@ -29,6 +29,7 @@ darkGrayLight: Final[Color] = (40, 40, 50)
 
 class GameState(Enum):
     MENU = auto()
+    LEVEL_SELECT = auto()
     GAME = auto()
     OPTIONS = auto()
     QUIT = auto()
@@ -37,7 +38,24 @@ class GameState(Enum):
 obstacleSpawnEvent: Final[int] = pygame.USEREVENT + 1
 
 bSoundEnabled: bool = True
-bLevel2Unlocked: bool = False
+
+levelCompleted: dict[int, bool] = {}
+levelUnlocked: dict[int, bool] = {1: True}
+
+
+def bIsLevelCompleted(levelId: int) -> bool:
+    return levelCompleted.get(levelId, False)
+
+
+def bIsLevelUnlocked(levelId: int) -> bool:
+    if levelId == 1:
+        return True
+    return levelUnlocked.get(levelId, False)
+
+
+def completeLevel(levelId: int) -> None:
+    levelCompleted[levelId] = True
+    levelUnlocked[levelId + 1] = True
 
 JOY_DEADZONE: Final[float] = 0.3
 JOY_AXIS_THRESHOLD: Final[float] = 0.5

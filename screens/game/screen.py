@@ -446,7 +446,10 @@ class GameScreen:
         if self._eeMode == EasterEggMode.MIRROR:
             screen.blit(pygame.transform.flip(screen, True, False), (0, 0))
         elif self._eeMode == EasterEggMode.INVERTED:
-            screen.blit(pygame.transform.invert(screen), (0, 0))
+            white = Surface(screen.get_size())
+            white.fill((255, 255, 255))
+            white.blit(screen, (0, 0), special_flags=pygame.BLEND_RGB_SUB)
+            screen.blit(white, (0, 0))
 
     def _drawScrollingBackground(self, screen: Surface) -> None:
         x1 = -int(self.scrollX)

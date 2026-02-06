@@ -44,8 +44,6 @@ class FallingCage(BaseObstacle):
         self.shakeOffset: float = 0.0
         self.groundedTimer: float = 0.0
         self.fallVelocity: float = 0.0
-        self._warningSurface: Surface | None = None
-
         self.image = self._getCageImage()
         self.rect = self.image.get_rect(midtop=(x, ceilingY))
         self.chainImage = self._getChainImage(self.rect.top)
@@ -153,18 +151,11 @@ class FallingCage(BaseObstacle):
                     self.triggerFall()
 
         elif self.state == CageState.WARNING:
-            if self._warningSurface is None:
-                h = self.groundY - self.rect.bottom
-                if h > 0:
-                    self._warningSurface = pygame.Surface((self.cageWidth + 20, h), pygame.SRCALPHA)
-                    if pygame.display.get_surface():
-                        self._warningSurface = self._warningSurface.convert_alpha()
             self.warningTimer -= dt
             self.shakeOffset = (pygame.time.get_ticks() % 100 - 50) * 0.1
             if self.warningTimer <= 0:
                 self.state = CageState.FALLING
                 self.fallVelocity = 200.0
-                self._warningSurface = None
 
         elif self.state == CageState.FALLING:
             self.fallVelocity += 2000.0 * dt
@@ -207,9 +198,3 @@ class FallingCage(BaseObstacle):
 
         surface.blit(self.image, (drawX, self.rect.y))
 
-        if self.state == CageState.WARNING and self._warningSurface is not None:
-            alpha = max(0, min(255, int(80 + 40 * abs(self.shakeOffset))))
-            warnColor = (255, 50, 50, alpha)
-            self._warningSurface.fill((0, 0, 0, 0))
-            pygame.draw.rect(self._warningSurface, warnColor, self._warningSurface.get_rect())
-            surface.blit(self._warningSurface, (self.rect.x - 10, self.rect.bottom))

@@ -8,9 +8,9 @@ from settings import (
     width, height, minWidth, minHeight, fps, title,
     GameState, displayFlags, ScreenSize
 )
-from screens import MainMenu, GameScreen, OptionsScreen
+from screens import MainMenu, GameScreen, OptionsScreen, LevelSelectScreen
 from discord import DiscordRPC
-from levels import level1Config, level2Config, levelConfigs
+from levels import level1Config, levelConfigs
 from paths import assetsPath
 import config
 import settings
@@ -34,7 +34,10 @@ class Game:
         self.state: GameState = GameState.MENU
         self.currentLevel: int = 1
 
-        self.menu: MainMenu = MainMenu(self.setState, self.startLevel)
+        self.menu: MainMenu = MainMenu(self.setState)
+        self.levelSelect: LevelSelectScreen = LevelSelectScreen(
+            self.screenSize, self.setState, self.startLevel
+        )
         self.gameScreen: GameScreen = GameScreen(self.setState, level1Config)
         self.optionsScreen: OptionsScreen = OptionsScreen((width, height), self.setState)
 
@@ -82,6 +85,7 @@ class Game:
                 self.screen = pygame.display.set_mode(self.screenSize, displayFlags)
 
         self.menu.onResize(self.screenSize)
+        self.levelSelect.onResize(self.screenSize)
         self.gameScreen.onResize(self.screenSize)
         self.optionsScreen.onResize(self.screenSize)
 
@@ -91,6 +95,7 @@ class Game:
         self.screenSize = (w, h)
         self.screen = pygame.display.set_mode(self.screenSize, displayFlags)
         self.menu.onResize(self.screenSize)
+        self.levelSelect.onResize(self.screenSize)
         self.gameScreen.onResize(self.screenSize)
         self.optionsScreen.onResize(self.screenSize)
 
@@ -113,13 +118,17 @@ class Game:
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_F11:
-                    # TODO: Fix the fullscreen, right now players size won't work well on fullscreen
                     self._toggleFullscreen()
                 elif event.key == pygame.K_ESCAPE and self.bFullscreen:
                     self._toggleFullscreen()
 
             if self.state == GameState.MENU:
                 self.menu.handleEvent(event, inputEvent)
+
+            elif self.state == GameState.LEVEL_SELECT:
+                self.levelSelect.handleEvent(event, inputEvent)
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and not self.bFullscreen:
+                    self.setState(GameState.MENU)
 
             elif self.state == GameState.GAME:
                 self.gameScreen.handleEvent(event, inputEvent)
@@ -134,10 +143,12 @@ class Game:
     def update(self, dt: float) -> None:
         if self.state == GameState.MENU:
             self.menu.update(dt)
+        elif self.state == GameState.LEVEL_SELECT:
+            self.levelSelect.update(dt)
         elif self.state == GameState.GAME:
             self.gameScreen.update(dt)
-            if self.gameScreen.bLevelComplete and self.currentLevel == 1 and not settings.bLevel2Unlocked:
-                settings.bLevel2Unlocked = True
+            if self.gameScreen.bLevelComplete and not settings.bIsLevelCompleted(self.currentLevel):
+                settings.completeLevel(self.currentLevel)
                 config.save()
         elif self.state == GameState.OPTIONS:
             self.optionsScreen.update(dt)
@@ -145,10 +156,10 @@ class Game:
     def draw(self) -> None:
         if self.state == GameState.MENU:
             self.menu.draw(self.screen)
-
+        elif self.state == GameState.LEVEL_SELECT:
+            self.levelSelect.draw(self.screen)
         elif self.state == GameState.GAME:
             self.gameScreen.draw(self.screen)
-
         elif self.state == GameState.OPTIONS:
             self.optionsScreen.draw(self.screen)
 
@@ -160,7 +171,7 @@ class Game:
             return
         self.rpcUpdateTimer = 0.0
 
-        if self.state == GameState.MENU or self.state == GameState.OPTIONS:
+        if self.state in (GameState.MENU, GameState.OPTIONS, GameState.LEVEL_SELECT):
             await self.discordRpc.updateMenu()
         elif self.state == GameState.GAME:
             if self.gameScreen.bGameOver:

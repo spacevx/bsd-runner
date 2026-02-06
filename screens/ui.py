@@ -4,6 +4,7 @@ import pygame
 from pygame import Surface, Rect
 from pygame.event import Event
 from pygame.font import Font
+from pytablericons import TablerIcons, OutlineIcon, FilledIcon  # type: ignore[import-untyped]
 
 _secTopN = (28, 30, 38)
 _secBotN = (18, 20, 26)
@@ -36,6 +37,20 @@ _shadowAlpha = 70
 _glowAlpha = 22
 _cornerR = 10
 _shadowOff = 3
+
+_iconCache: dict[tuple[OutlineIcon | FilledIcon, int, str, float], Surface] = {}
+
+
+def tablerIcon(icon: OutlineIcon | FilledIcon, size: int = 32, color: str = '#FFFFFF', strokeWidth: float = 2.0) -> Surface:
+    key = (icon, size, color, strokeWidth)
+    if key in _iconCache:
+        return _iconCache[key]
+    pil = TablerIcons.load(icon, size=size, color=color, stroke_width=strokeWidth)
+    surf = pygame.image.frombuffer(pil.tobytes(), pil.size, pil.mode)
+    if pil.mode == 'RGBA':
+        surf = surf.convert_alpha()
+    _iconCache[key] = surf
+    return surf
 
 
 def _gradientRect(w: int, h: int, top: tuple[int, int, int], bot: tuple[int, int, int], alpha: int, cr: int) -> Surface:
