@@ -42,6 +42,7 @@ class GameScreen:
     baseW: int = 1280
     baseH: int = 720
     groundRatio: float = 1.0
+    ceilingRatio: float = 0.083
     cageDodgeScore: int = 150
 
     def __init__(self, setStateCallback: Callable[[GameState], None],
@@ -58,6 +59,7 @@ class GameScreen:
         self.scrollX: float = 0.0
         self.scrollSpeed: float = levelConfig.scrollSpeed
         self.groundY = int(height * self.groundRatio)
+        self.ceilingY = int(height * self.ceilingRatio)
 
         self.localPlayer = self._createPlayer()
         self.chaser: Chaser | None = self._createChaser()
@@ -68,7 +70,7 @@ class GameScreen:
             self.allSprites.add(self.chaser)
 
         self.obstacles: Group[Any] = pygame.sprite.Group()
-        self.ceiling = Ceiling(self.screenSize[0], self.screenSize[1])
+        self.ceiling = Ceiling(self.screenSize[0], self.screenSize[1], self.ceilingY)
         self.fallingCages: Group[Any] = pygame.sprite.Group()
 
         self.score: int = 0
@@ -109,7 +111,8 @@ class GameScreen:
 
         self.hud = HUD(self.screenSize, bDoubleJump=levelConfig.bDoubleJump,
                        bSlideEnabled=levelConfig.bSlideEnabled,
-                       bFallingCages=levelConfig.bFallingCages)
+                       bFallingCages=levelConfig.bFallingCages,
+                       bShowHitCounter=levelConfig.bGeometricObstacles)
         self.spawner = ObstacleSpawner(
             self.screenSize, self.groundY, self.scrollSpeed,
             levelConfig.obstacleMinDelay, levelConfig.obstacleMaxDelay,
@@ -209,6 +212,7 @@ class GameScreen:
         self.scale = min(newSize[0] / self.baseW, newSize[1] / self.baseH)
         self._loadBackground()
         self.groundY = int(newSize[1] * self.groundRatio)
+        self.ceilingY = int(newSize[1] * self.ceilingRatio)
 
         self.localPlayer.setGroundY(self.groundY)
         if self.chaser:
@@ -217,7 +221,7 @@ class GameScreen:
         if self.groundTilemap:
             groundH = newSize[1] - self.groundY
             self.groundTilemap.on_resize(newSize[0], self.groundY, groundH)
-        self.ceiling.onResize(newSize[0])
+        self.ceiling.onResize(newSize[0], self.ceilingY)
         if self.ceilingTilemap:
             self.ceilingTilemap.on_resize(newSize[0], self.ceiling.height)
 
@@ -230,6 +234,7 @@ class GameScreen:
         Obstacle.setDir(cfg.obstacleDir)
         FallingCage.clearCache()
         self.groundY = int(self.screenSize[1] * self.groundRatio)
+        self.ceilingY = int(self.screenSize[1] * self.ceilingRatio)
 
         self.localPlayer = self._createPlayer()
         self.chaser = self._createChaser()
@@ -363,7 +368,8 @@ class GameScreen:
         elif self.ceilingTilemap:
             self.ceilingTilemap.update(scrollDelta)
 
-        self.score += int(self.scrollSpeed * dt * 0.1 * slowMult)
+        if not cfg.bGeometricObstacles:
+            self.score += int(self.scrollSpeed * dt * 0.1 * slowMult)
 
         if self.slowdownTimer > 0:
             self.slowdownTimer -= dt
@@ -449,10 +455,14 @@ class GameScreen:
             self.slowdownTimer = cfg.slowdownDuration
             if self.chaser:
                 self.chaser.onPlayerHit()
-            if self.hitCount >= cfg.maxHits and self.chaser and not self.bFinaleArmed:
-                self.bChaserCatching = True
-                self.chaser.startCatching(self.localPlayer.rect.centerx)
-                pygame.time.set_timer(obstacleSpawnEvent, 0)
+            if self.hitCount >= cfg.maxHits:
+                if self.chaser and not self.bFinaleArmed:
+                    self.bChaserCatching = True
+                    self.chaser.startCatching(self.localPlayer.rect.centerx)
+                    pygame.time.set_timer(obstacleSpawnEvent, 0)
+                elif not self.chaser:
+                    self.bGameOver = True
+                    pygame.time.set_timer(obstacleSpawnEvent, 0)
 
         if result.bHitCage and result.trappingCage and result.trappingCage is not self.finaleCage:
             self.bPlayerTrapped = True

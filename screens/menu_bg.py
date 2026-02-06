@@ -21,6 +21,7 @@ class MenuBackground:
     baseH: int = 720
     scrollSpeed: float = 300.0
     groundRatio: float = 1.0
+    ceilingRatio: float = 0.083
     overlayAlpha: int = 130
 
     def __init__(self, screenSize: ScreenSize) -> None:
@@ -68,7 +69,8 @@ class MenuBackground:
 
     def _initCeilingTilemap(self) -> None:
         w = self.screenSize[0]
-        self.ceiling = Ceiling(w, self.screenSize[1])
+        self.ceilingY = int(self.screenSize[1] * self.ceilingRatio)
+        self.ceiling = Ceiling(w, self.screenSize[1], self.ceilingY)
         self.ceilingTileset = CeilingTileSet(ceilingTilesPath)
         self.ceilingTilemap = CeilingTilemap(self.ceilingTileset, w, self.ceiling.height)
 
@@ -111,10 +113,11 @@ class MenuBackground:
         self.screenSize = newSize
         self.scale = min(newSize[0] / self.baseW, newSize[1] / self.baseH)
         self.groundY = int(newSize[1] * self.groundRatio)
+        self.ceilingY = int(newSize[1] * self.ceilingRatio)
 
         self._loadBackground()
         self.groundTilemap.on_resize(newSize[0], self.groundY, newSize[1] - self.groundY)
-        self.ceiling.onResize(newSize[0])
+        self.ceiling.onResize(newSize[0], self.ceilingY)
         self.ceilingTilemap.on_resize(newSize[0], self.ceiling.height)
         self.demoPlayer.setGroundY(self.groundY)
         self._buildOverlay()

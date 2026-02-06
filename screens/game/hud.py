@@ -16,11 +16,13 @@ class HUD:
     baseH: int = 1080
 
     def __init__(self, screenSize: ScreenSize, bDoubleJump: bool = False,
-                 bSlideEnabled: bool = True, bFallingCages: bool = True) -> None:
+                 bSlideEnabled: bool = True, bFallingCages: bool = True,
+                 bShowHitCounter: bool = False) -> None:
         self.screenSize = screenSize
         self.bDoubleJump = bDoubleJump
         self.bSlideEnabled = bSlideEnabled
         self.bFallingCages = bFallingCages
+        self.bShowHitCounter = bShowHitCounter or bFallingCages
         self.scale = min(screenSize[0] / self.baseW, screenSize[1] / self.baseH)
         self._createFonts()
 
@@ -546,7 +548,7 @@ class HUD:
 
     def draw(self, screen: Surface, score: int, bGameOver: bool, dt: float, hitCount: int = 0, maxHits: int = 3, bLevelComplete: bool = False) -> None:
         self.drawScore(screen, score, dt)
-        if self.bFallingCages:
+        if self.bShowHitCounter:
             self.drawHitCounter(screen, hitCount, maxHits)
         self.drawControls(screen)
         if bLevelComplete:

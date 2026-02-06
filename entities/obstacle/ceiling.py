@@ -7,9 +7,9 @@ from settings import Color
 class Ceiling:
     defaultHeight: int = 60
 
-    def __init__(self, screenWidth: int, screenHeight: int) -> None:
+    def __init__(self, screenWidth: int, screenHeight: int, height: int | None = None) -> None:
         self.width = screenWidth
-        self.height = self.defaultHeight
+        self.height = height if height is not None else self.defaultHeight
         self.image = self._createSurface(screenWidth)
         self.rect = self.image.get_rect(topleft=(0, 0))
 
@@ -31,8 +31,10 @@ class Ceiling:
 
         return surface
 
-    def onResize(self, newWidth: int) -> None:
+    def onResize(self, newWidth: int, height: int | None = None) -> None:
         self.width = newWidth
+        if height is not None:
+            self.height = height
         self.image = self._createSurface(newWidth)
         self.rect = self.image.get_rect(topleft=(0, 0))
 
