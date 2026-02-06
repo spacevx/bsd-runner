@@ -29,6 +29,7 @@ class ObstacleSpawner:
         self.lastBodyTime: float = 0.0
         self.lastCageTime: float = 0.0
         self.bGeometricObstacles: bool = bGeometricObstacles
+        self.bHeadMode: bool = False
 
     def _s(self, val: int) -> int:
         return max(1, int(val * self.scale))
@@ -48,14 +49,11 @@ class ObstacleSpawner:
             pygame.time.set_timer(obstacleSpawnEvent, int(self.obstacleSpawnDelay * 1000))
 
     def _spawnObstacle(self, obstacles: Group[Obstacle]) -> None:
+        from entities.obstacle.base import BaseObstacle
         x = self.screenSize[0] + self._s(100)
+        obstacle: BaseObstacle
 
         if self.bGeometricObstacles:
-            from entities.obstacle.geometric import GeometricObstacle
-            shapes = ["triangle", "square", "hexagon"]
-            colors = [(0, 255, 255), (255, 0, 255), (255, 255, 0), (0, 255, 100)]
-            shape = random.choice(shapes)
-            color = random.choice(colors)
             heightTiers = [
                 self.groundY,
                 self.groundY - self._s(100),
@@ -63,7 +61,16 @@ class ObstacleSpawner:
                 self.groundY - self._s(300),
             ]
             posY = random.choice(heightTiers)
-            obstacle = GeometricObstacle(x, self.groundY, self.scale, shape, color, posY=posY)
+
+            if self.bHeadMode:
+                from entities.obstacle.geometric import HeadObstacle
+                obstacle = HeadObstacle(x, self.groundY, self.scale, posY=posY)
+            else:
+                from entities.obstacle.geometric import GeometricObstacle
+                shapes = ["triangle", "square", "hexagon"]
+                colors = [(0, 255, 255), (255, 0, 255), (255, 255, 0), (0, 255, 100)]
+                obstacle = GeometricObstacle(x, self.groundY, self.scale,
+                                             random.choice(shapes), random.choice(colors), posY=posY)
         else:
             obstacle = Obstacle(x, self.groundY, self.scale)
 
@@ -82,5 +89,6 @@ class ObstacleSpawner:
     def reset(self) -> None:
         self.obstacleSpawnDelay = random.uniform(self.obstacleMinDelay, self.obstacleMaxDelay)
         self.lastBodyTime = 0.0
+        self.bHeadMode = False
         self.lastCageTime = 0.0
         pygame.time.set_timer(obstacleSpawnEvent, int(self.obstacleSpawnDelay * 1000))

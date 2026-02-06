@@ -110,6 +110,10 @@ class GameScreen:
         self._eeHeld: set[str] = set()
         self._eeMode: EasterEggMode = EasterEggMode.OFF
 
+        self._headEeJumps: int = 0
+        self._headEeTimer: float = 0.0
+        self._bHeadEeActive: bool = False
+
         self.hud = HUD(self.screenSize, bDoubleJump=levelConfig.bDoubleJump,
                        bSlideEnabled=levelConfig.bSlideEnabled,
                        bFallingCages=levelConfig.bFallingCages,
@@ -284,6 +288,9 @@ class GameScreen:
         self._eeStep = 0
         self._eeHeld.clear()
         self._eeMode = EasterEggMode.OFF
+        self._headEeJumps = 0
+        self._headEeTimer = 0.0
+        self._bHeadEeActive = False
 
         self.spawner.reset()
         self.hud.resetGameOverCache()
@@ -331,6 +338,12 @@ class GameScreen:
                 elif name not in ("JUMP", "SLIDE"):
                     self._eeStep = 0
 
+                if name == "JUMP" and not self._bHeadEeActive and self._headEeTimer < 10.0:
+                    self._headEeJumps += 1
+                    if self._headEeJumps >= 5:
+                        self._bHeadEeActive = True
+                        self.spawner.bHeadMode = True
+
         self.spawner.handleEvent(event, self.obstacles, self.bGameOver or self.bFinaleArmed)
 
     def update(self, dt: float) -> None:
@@ -349,6 +362,9 @@ class GameScreen:
         if self.bPlayerTackled:
             self._updateTackled(dt)
             return
+
+        if not self._bHeadEeActive:
+            self._headEeTimer += dt
 
         if self.bChaserCatching:
             self._updateChaserCatching(dt)

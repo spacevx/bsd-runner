@@ -26,7 +26,7 @@ class MainMenu:
         self.scale: float = min(width / self.baseW, height / self.baseH)
 
         lvl = lastCompletedLevel()
-        cfg = levelConfigs.get(lvl) if lvl else None  # type: ignore[arg-type]
+        cfg = levelConfigs.get(lvl) if lvl else None
         self.menuBg = MenuBackground(
             self.screenSize,
             cfg.backgroundPath if cfg else None,

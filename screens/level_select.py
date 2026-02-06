@@ -53,7 +53,7 @@ class LevelSelectScreen:
         self.scale: float = min(screenSize[0] / self.baseW, screenSize[1] / self.baseH)
 
         lvl = lastCompletedLevel()
-        cfg = levelConfigs.get(lvl) if lvl else None  # type: ignore[arg-type]
+        cfg = levelConfigs.get(lvl) if lvl else None
         self.menuBg = MenuBackground(
             screenSize,
             cfg.backgroundPath if cfg else None,
