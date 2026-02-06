@@ -135,12 +135,16 @@ class GameScreen:
 
     def _fireLaser(self) -> None:
         from entities.laser import LaserBeam
+        from entities.player import PlayerState
 
         if not self.levelConfig.bLaserEnabled:
             return
 
         playerX = self.localPlayer.rect.right
-        eyeY = self.localPlayer.rect.top + self._s(60)
+        if self.localPlayer.state == PlayerState.SLIDING:
+            eyeY = self.localPlayer.rect.centery + self._s(10)
+        else:
+            eyeY = self.localPlayer.rect.top + self._s(60)
         laserRange = self.levelConfig.laserRange
 
         hitObstacle = self.gameCollision.checkLaserHit(
@@ -161,7 +165,7 @@ class GameScreen:
     def _updateLasers(self, dt: float) -> None:
         for beam in self.laserBeams[:]:
             beam.update(dt)
-            if not beam.bActive:
+            if beam.bDone:
                 self.laserBeams.remove(beam)
 
     def _s(self, val: int) -> int:
