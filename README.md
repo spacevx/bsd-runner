@@ -57,14 +57,14 @@ pyinstaller build.spec
 
 ## Flags
 
-**Note**: All those flags were used during our dev period to facilitate the work
+**Note**: All those flags were used during our dev period to facilitate the work, they are not meant to be used by the player
 
 - `--disableChaser` - Run the game without the chaser enemy
 - `--unlockAllLevels` - Unlock all levels
 
 Usage: `python main.py --disableChaser --unlockAllLevels` (you can combine them)
 
-To add a new flag, go to `flags.py`, add a new `bool` variable (prefixed with `b`), then add a `parser.add_argument("--yourFlag", action="store_true")` and assign it from `parsed`. Then you can use `flags.bYourFlag` anywhere in the code.
+To add a new flag, go to `flags.py`, add a new `bool` variable (prefixed with `b`), then add a `parser.add_argument("--yourFlag", action="store_true")` and assign it from `parsed`. Then you can use `flags.bYourFlag` anywhere in the code
 
 ## Options
 
@@ -79,7 +79,7 @@ To add a new flag, go to `flags.py`, add a new `bool` variable (prefixed with `b
 
 ## Discord Rich Presence
 
-The game has a Discord Rich Presence, it changes depending on what you're doing
+The game has a Discord Rich Presence, it changes depending on what you're doing in the game
 
 | Menu | Playing | Game Over |
 |------|---------|-----------|
@@ -120,6 +120,7 @@ mma/
 
 - **mypy.yml**: Type checking on every push/PR (just like a tsconfig.json)
 - **release.yml**: Auto builds Windows executable and creates a release when the version in `pyproject.toml` changes
+
 
 ## Code Style
 - camelCase for variables, `b` prefix for booleans (`bGameOver`, `bDoubleJump`)
